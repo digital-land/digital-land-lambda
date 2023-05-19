@@ -56,7 +56,6 @@ jobs:
           aws-region: eu-west-2
 
       - name: Build efs sync collection
-        working-directory: /efs-sync-collection
         run: |
           rm -rf node_modules/
           docker build -t efs-sync-collection-lambda-builder .
