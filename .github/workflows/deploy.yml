@@ -61,10 +61,12 @@ jobs:
           docker build -t efs-sync-collection-lambda-builder ./efs-sync-collection
           # docker run -i -v `pwd`:/var/task efs-sync-collection-lambda-builder
 
+      - name: Set File Permissions
+        run: chmod 0666 ./efs-sync-collection
+  
       - name: Create Zip Archive
-        run: |
-          zip -r --mode=0666 archive.zip ./efs-sync-collection
-
+        run: zip -r archive.zip ./efs-sync-collection
+      
       # - uses: aws-actions/amazon-ecr-login@v1
 
       # - run: docker pull $DOCKER_REPO:latest || echo "no current latest image"
