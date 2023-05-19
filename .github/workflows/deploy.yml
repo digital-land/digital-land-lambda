@@ -64,8 +64,8 @@ jobs:
       - name: Set File Permissions
         run: chmod 0666 ./efs-sync-collection
   
-      - name: Create Zip Archive
-        run: zip -r archive.zip ./efs-sync-collection
+      - name: Create Archive
+        run: zip archive.zip ./efs-sync-collection/* -r
       
       # - uses: aws-actions/amazon-ecr-login@v1
 
