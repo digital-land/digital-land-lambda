@@ -58,7 +58,7 @@ jobs:
       - name: Build efs sync collection
         run: |
           rm -rf node_modules/
-          docker build -t efs-sync-collection-lambda-builder .
+          docker build -t efs-sync-collection-lambda-builder ./efs-sync-collection
           docker run -i -v `pwd`:/var/task efs-sync-collection-lambda-builder
 
       # - uses: aws-actions/amazon-ecr-login@v1
