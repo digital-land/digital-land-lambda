@@ -61,6 +61,7 @@ jobs:
       - name: Create Archive
         run: |
           sudo -s sh -c 'cd efs-sync-collection && zip -r ../efs-sync-collection.zip ./*'
+          sudo -s sh -c  'pwd'
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v3
@@ -77,4 +78,4 @@ jobs:
       
       - name: Deploy Lambda function
         run: |
-          sudo aws lambda update-function-code --function-name ${{ matrix.environment }}-efs-sync-collection --zip-file fileb://./efs-sync-collection/efs-sync-collection.zip
+          sudo aws lambda update-function-code --function-name ${{ matrix.environment }}-efs-sync-collection --zip-file fileb://./efs-sync-collection.zip
