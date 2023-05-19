@@ -77,4 +77,4 @@ jobs:
       
       - name: Deploy Lambda function
         run: |
-          aws lambda update-function-code --function-name development-efs-sync-collection --zip-file efs-sync-collection.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-efs-sync-collection --zip-file fileb://./efs-sync-collection/efs-sync-collection.zip
