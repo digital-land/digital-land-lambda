@@ -66,7 +66,7 @@ jobs:
   
       - name: Create Archive
         run: |
-          cd efs-sync-collection
+          sudo cd efs-sync-collection
           zip -r ../archive.zip ./*
       
       # - uses: aws-actions/amazon-ecr-login@v1
