@@ -49,12 +49,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y rsync
 
-      - uses: aws-actions/configure-aws-credentials@v1-node16
-        with:
-          aws-access-key-id: ${{ secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-2
-
       - name: Build efs sync collection
         run: |
           rm -rf node_modules/
@@ -66,22 +60,21 @@ jobs:
   
       - name: Create Archive
         run: |
-          sudo -s sh -c 'cd efs-sync-collection && zip -r ../archive.zip ./*'
+          sudo -s sh -c 'cd efs-sync-collection && zip -r ../efs-sync-collection.zip ./*'
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v3
         with:
           name: efs-sync-collection
-          path: archive.zip
+          path: efs-sync-collection.zip
       
-          # - uses: aws-actions/amazon-ecr-login@v1
-
-      # - run: docker pull $DOCKER_REPO:latest || echo "no current latest image"
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
       
-      # - run: docker build --build-arg DEPLOY_TIME="$(date +%Y-%m-%dT%H:%M:%S)" -t $DOCKER_REPO:${{ steps.vars.outputs.sha_short }} efs-sync-collection
-
-      # - run: docker tag $DOCKER_REPO:${{ steps.vars.outputs.sha_short }} $DOCKER_REPO:latest
-
-      # - run: docker push $DOCKER_REPO:${{ steps.vars.outputs.sha_short }}
-
-      # - run: docker push $DOCKER_REPO:latest
+      - name: Deploy Lambda function
+        run: |
+          aws lambda update-function-code --function-name development-efs-sync-collection --zip-file efs-sync-collection.zip
