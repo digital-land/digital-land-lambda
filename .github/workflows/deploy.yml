@@ -68,7 +68,11 @@ jobs:
         run: |
           sudo -s sh -c 'cd efs-sync-collection && zip -r ../archive.zip ./*'
 
-      
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v2
+        with:
+          name: node-app
+          path: archive.zip
       # - uses: aws-actions/amazon-ecr-login@v1
 
       # - run: docker pull $DOCKER_REPO:latest || echo "no current latest image"
