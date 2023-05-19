@@ -59,7 +59,7 @@ jobs:
         run: |
           rm -rf node_modules/
           docker build -t efs-sync-collection-lambda-builder ./efs-sync-collection
-          docker run -i -v `pwd/efs-sync-collection`:/var/task efs-sync-collection-lambda-builder
+          docker run -i -v ${GITHUB_WORKSPACE}/efs-sync-collection:/var/task efs-sync-collection-lambda-builder
 
       - name: Set File Permissions
         run: chmod 0666 ./efs-sync-collection
