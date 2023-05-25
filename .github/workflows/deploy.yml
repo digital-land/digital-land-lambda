@@ -50,43 +50,45 @@ jobs:
           docker build -t efs-sync-collection-lambda-builder ./efs-sync-collection
           docker run -i -v ${GITHUB_WORKSPACE}/efs-sync-collection:/var/task efs-sync-collection-lambda-builder
 
-      - name: Build Datasette notification functions
+      - name: Build Notification functions
         run: |
           rm -rf node_modules/
           docker build -t ${{ matrix.environment }}-datasette-notification-builder ./notification-code
           docker run -i -v ${GITHUB_WORKSPACE}/notification-code:/var/task ${{ matrix.environment }}-datasette-notification-builder
 
       - name: Set File Permissions
-        run: chmod 0666 ./efs-sync-collection
+        run: |
+          chmod 0666 ./efs-sync-collection
+          chmod 0666 ./notification-code
   
-      - name: Create Archive
+      - name: Create efs sync Archive
         run: |
           sudo -s sh -c 'cd efs-sync-collection && zip -r ../efs-sync-collection.zip ./*'
           sudo -s sh -c  'pwd'
 
-      - name: Upload artifact for deployment job
+      - name: Upload efs sync artifact for deployment job
         uses: actions/upload-artifact@v3
         with:
           name: efs-sync-collection
           path: efs-sync-collection.zip
 
-      - name: Create Archive Datasette
+      - name: Create Notification Archive
         run: |
           sudo -s sh -c 'cd notification-code && zip -r ../notification-code.zip ./*'
           sudo -s sh -c  'pwd'
   
-      - name: Upload Datasette artifact for deployment job
+      - name: Upload Notification artifact for deployment job
         uses: actions/upload-artifact@v3
         with:
           name: notification-code
           path: notification-code.zip
       
-      # - name: Set up AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@v1-node16
-      #   with:
-      #     aws-access-key-id: ${{ secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
-      #     aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
-      #     aws-region: eu-west-2
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
       
       # - name: Deploy aws Lambda function
       #   run: |
