@@ -55,7 +55,7 @@ jobs:
           rm -rf node_modules
           rm -rf ../notification-code-dist/${{ matrix.environment }}-datasette || echo "no dist directory"
           mkdir -p ../notification-code-dist/${{ matrix.environment }}-datasette
-          cp ./notification-code ../notification-code-dist/${{ matrix.environment }}-datasette/
+          cp -r ./notification-code ../notification-code-dist/${{ matrix.environment }}-datasette/
           cd ../notification-code-dist/${{ matrix.environment }}-datasette
           docker build -t ${{ matrix.environment }}-datasette-notification-builder ./notification-code
           docker run -i -v ${GITHUB_WORKSPACE}/notification-code:/var/task ${{ matrix.environment }}-datasette-notification-builder
