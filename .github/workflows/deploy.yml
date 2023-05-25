@@ -50,6 +50,16 @@ jobs:
           docker build -t efs-sync-collection-lambda-builder ./efs-sync-collection
           docker run -i -v ${GITHUB_WORKSPACE}/efs-sync-collection:/var/task efs-sync-collection-lambda-builder
 
+      - name: Build staging-datasette notification functions
+        run: |
+          rm -rf node_modules
+          rm -rf ../notification-code-dist/${{ matrix.environment }}-datasette || echo "no dist directory"
+          mkdir -p ../notification-code-dist/${{ matrix.environment }}-datasette
+          cp ./* ../notification-code-dist/${{ matrix.environment }}-datasette/
+          cd ../notification-code-dist/${{ matrix.environment }}-datasette
+          docker build -t ${{ matrix.environment }}-datasette-notification-builder ./notification-code
+          docker run -i -v ${GITHUB_WORKSPACE}/notification-code:/var/task ${{ matrix.environment }}-datasette-notification-builder
+
       - name: Set File Permissions
         run: chmod 0666 ./efs-sync-collection
   
