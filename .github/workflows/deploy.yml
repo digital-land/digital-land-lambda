@@ -53,8 +53,8 @@ jobs:
       - name: Build Notification functions
         run: |
           rm -rf node_modules/
-          docker build -t ${{ matrix.environment }}-datasette-notification-builder ./notification-code
-          docker run -i -v ${GITHUB_WORKSPACE}/notification-code:/var/task ${{ matrix.environment }}-datasette-notification-builder
+          docker build -t ${{ matrix.environment }}-notification-builder ./notification-code
+          docker run -i -v ${GITHUB_WORKSPACE}/notification-code:/var/task ${{ matrix.environment }}-notification-builder
 
       - name: Set File Permissions
         run: |
@@ -90,6 +90,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-2
       
-      # - name: Deploy aws Lambda function
-      #   run: |
-      #     aws lambda update-function-code --function-name ${{ matrix.environment }}-efs-sync-collection --zip-file fileb://./efs-sync-collection.zip
+      - name: Deploy aws Lambda function
+        run: |
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-efs-sync-collection --zip-file fileb://./efs-sync-collection.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-main-slack-notifier --zip-file fileb://./notification-code.zip
