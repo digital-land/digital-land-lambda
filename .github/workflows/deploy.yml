@@ -1,4 +1,4 @@
-name: Deploy into aws
+name: Deploy
 
 on:
   push:
@@ -90,7 +90,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-2
       
-      - name: Deploy aws Lambda function
+      - name: Deploy aws Lambda functions
         run: |
           aws lambda update-function-code --function-name ${{ matrix.environment }}-efs-sync-collection --zip-file fileb://./efs-sync-collection.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-main-slack-notifier --zip-file fileb://./notification-code.zip
