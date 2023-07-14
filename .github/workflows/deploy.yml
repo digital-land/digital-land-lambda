@@ -60,6 +60,7 @@ jobs:
         run: |
           chmod 0666 ./efs-sync-collection
           chmod 0666 ./notification-code
+          chmod 0666 ./process-logs
   
       - name: Create efs sync Archive
         run: |
@@ -82,6 +83,17 @@ jobs:
         with:
           name: notification-code
           path: notification-code.zip
+
+      - name: Create Process log Archive
+        run: |
+          sudo -s sh -c 'cd process-log && zip -r ../process-log.zip ./*'
+          sudo -s sh -c  'pwd'
+  
+      - name: Upload Process log artifact for deployment job
+        uses: actions/upload-artifact@v3
+        with:
+          name: process-log
+          path: process-log.zip
       
       - name: Set up AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
