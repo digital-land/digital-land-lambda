@@ -86,7 +86,7 @@ jobs:
 
       - name: Create Process log Archive
         run: |
-          sudo -s sh -c 'cd process-log && zip -r ../process-log.zip ./*'
+          sudo -s sh -c 'cd process-log && zip -r ../process-log.zip ./index.js'
           sudo -s sh -c  'pwd'
   
       - name: Upload Process log artifact for deployment job
