@@ -60,7 +60,7 @@ jobs:
         run: |
           chmod 0666 ./efs-sync-collection
           chmod 0666 ./notification-code
-          chmod 0666 ./process-logs
+          chmod 0666 ./process-log
   
       - name: Create efs sync Archive
         run: |
