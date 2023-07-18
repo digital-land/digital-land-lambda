@@ -114,13 +114,14 @@ jobs:
           aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
           aws-region: eu-west-2
       
-      - name: Deploy aws notification Lambda functions
+      - name: Deploy aws Lambda functions
         run: |
           aws lambda update-function-code --function-name ${{ matrix.environment }}-efs-sync-collection --zip-file fileb://./efs-sync-collection.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-main-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-status-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-datasette-tiles-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-datasette-slack-notifier --zip-file fileb://./notification-code.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-send-alarms-to-slack --zip-file fileb://./cloudwatch-alarms-to-slack.zip
 
       - name: Deploy aws Process log Lambda functions
         run: |
