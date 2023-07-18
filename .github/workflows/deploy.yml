@@ -61,6 +61,7 @@ jobs:
           chmod 0666 ./efs-sync-collection
           chmod 0666 ./notification-code
           chmod 0666 ./process-log
+          chmod 0666 ./cloudwatch-alarms-to-slack
   
       - name: Create efs sync Archive
         run: |
@@ -94,6 +95,17 @@ jobs:
         with:
           name: process-log
           path: process-log.zip
+
+      - name: Create Cloudwatch alarms Archive
+        run: |
+          sudo -s sh -c 'cd cloudwatch-alarms-to-slack && zip -r ../cloudwatch-alarms-to-slack ./function.py'
+          sudo -s sh -c  'pwd'
+  
+      - name: Upload Cloudwatch alarms artifact for deployment job
+        uses: actions/upload-artifact@v3
+        with:
+          name: cloudwatch-alarms-to-slack
+          path: cloudwatch-alarms-to-slack.zip
       
       - name: Set up AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
