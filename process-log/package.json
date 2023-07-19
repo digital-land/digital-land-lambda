@@ -1,0 +1,14 @@
+{
+  "name": "code",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {
+    "test": "jest"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.1225.0"
+  },
+  "devDependencies": {
+    "aws-sdk-mock": "^5.7.0"
+  }
+}

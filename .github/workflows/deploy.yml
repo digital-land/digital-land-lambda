@@ -60,6 +60,8 @@ jobs:
         run: |
           chmod 0666 ./efs-sync-collection
           chmod 0666 ./notification-code
+          chmod 0666 ./process-log
+          chmod 0666 ./cloudwatch-alarms-to-slack
   
       - name: Create efs sync Archive
         run: |
@@ -82,6 +84,28 @@ jobs:
         with:
           name: notification-code
           path: notification-code.zip
+
+      - name: Create Process log Archive
+        run: |
+          sudo -s sh -c 'cd process-log && zip -r ../process-log.zip ./index.js'
+          sudo -s sh -c  'pwd'
+  
+      - name: Upload Process log artifact for deployment job
+        uses: actions/upload-artifact@v3
+        with:
+          name: process-log
+          path: process-log.zip
+
+      - name: Create Cloudwatch alarms Archive
+        run: |
+          sudo -s sh -c 'cd cloudwatch-alarms-to-slack && zip -r ../cloudwatch-alarms-to-slack ./function.py'
+          sudo -s sh -c  'pwd'
+  
+      - name: Upload Cloudwatch alarms artifact for deployment job
+        uses: actions/upload-artifact@v3
+        with:
+          name: cloudwatch-alarms-to-slack
+          path: cloudwatch-alarms-to-slack.zip
       
       - name: Set up AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
@@ -97,3 +121,13 @@ jobs:
           aws lambda update-function-code --function-name ${{ matrix.environment }}-status-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-datasette-tiles-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-datasette-slack-notifier --zip-file fileb://./notification-code.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-send-alarms-to-slack --zip-file fileb://./cloudwatch-alarms-to-slack.zip
+
+      - name: Deploy aws Process log Lambda functions
+        run: |
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-datasette-cdn-logs-process --zip-file fileb://./process-log.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-datasette-tiles-cdn-logs-process --zip-file fileb://./process-log.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-main-cdn-logs-process --zip-file fileb://./process-log.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-status-cdn-logs-process --zip-file fileb://./process-log.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-root-to-www-logs-process --zip-file fileb://./process-log.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-collection-data-logs-process --zip-file fileb://./process-log.zip
