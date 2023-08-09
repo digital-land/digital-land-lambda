@@ -186,7 +186,7 @@ module.exports = class CollectionSync {
 
                 this.specifications = records
                     .map(spec => ({collection: spec[collectionField], dataset: spec[datasetField]}))
-                    .filter(spec => !["", "organisation"].includes(spec.collection));
+                    .filter(spec => ![""].includes(spec.collection));
 
                 resolve();
             });
