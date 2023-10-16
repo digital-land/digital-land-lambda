@@ -79,6 +79,7 @@ module.exports = class CollectionSync {
     }
 
     async moveDatabase(temporaryFilePath, finalFilePath, Key, Bucket) {
+        this.logger.info('moveDatabase ', {Key, Bucket});
         if (existsSync(finalFilePath)) {
             // try {
             //     await this.copyDatabaseContents(temporaryFilePath, finalFilePath);
@@ -98,6 +99,7 @@ module.exports = class CollectionSync {
             this.logger.info('Renaming file to new path.', {Key, Bucket});
             await rename(temporaryFilePath, finalFilePath);
         }
+        this.logger.info('moveDatabase done for ', {Key, Bucket});
     }
 
     async copyDatabaseContents(sourcePath, destinationPath) {
@@ -202,12 +204,13 @@ module.exports = class CollectionSync {
     }
 
     async copyFileFromS3(Key, Bucket, destinationPath) {
+        this.logger.info('copyFileFromS3', {Key, Bucket});
         const DatasetSource = this.s3Client.getObject({Bucket, Key}).createReadStream();
         const DatasetDestination = createWriteStream(destinationPath, {
             flags: 'w',
             encoding: null,
         });
-
+        this.logger.info('createWriteStream done', {Key, Bucket});   
         //createWriteStream(destinationPath, {encoding: null});
         await new Promise((resolve, reject) => {
             DatasetSource.on('end', () => {
@@ -232,6 +235,7 @@ module.exports = class CollectionSync {
                 DatasetSource.pipe(DatasetDestination);
             });
         });
+        this.logger.info('copyFileFromS3 done for ', {Key, Bucket});
     }
 
     async updateInspectionFile() {
