@@ -66,6 +66,7 @@ module.exports = class CollectionSync {
     async checkDatabaseIntegrity(databasePath) {
         const db = new Database(databasePath);
         const logger = this.logger;
+        logger.info('in method checkDatabaseIntegrity');
         await new Promise((resolve, reject) => {
             db.get('pragma quick_check;', function (error, result) {
                 if (error || result?.quick_check !== 'ok') {
@@ -75,6 +76,7 @@ module.exports = class CollectionSync {
                 resolve();
             });
         });
+        logger.info('checkDatabaseIntegrity done');
         db.close();
     }
 
