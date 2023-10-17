@@ -69,7 +69,9 @@ module.exports = class CollectionSync {
         logger.info('in method checkDatabaseIntegrity');
         await new Promise((resolve, reject) => {
             db.get('pragma quick_check;', function (error, result) {
+                logger.info('SQLite integrity result: ', {result});
                 if (error || result?.quick_check !== 'ok') {
+                    logger.info('SQLite integrity check failed', {result});
                     return reject(error || new Error(`Integrity check failed ${result?.quick_check}`));
                 }
                 logger.info('SQLite integrity check', {result});
@@ -79,7 +81,7 @@ module.exports = class CollectionSync {
         logger.info('checkDatabaseIntegrity done');
         db.close();
     }
-
+    
     async moveDatabase(temporaryFilePath, finalFilePath, Key, Bucket) {
         this.logger.info('moveDatabase ', {Key, Bucket});
         if (existsSync(finalFilePath)) {
