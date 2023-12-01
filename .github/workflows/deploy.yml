@@ -44,12 +44,6 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y rsync
 
-      - name: Build efs sync collection
-        run: |
-          rm -rf node_modules/
-          docker build -t efs-sync-collection-lambda-builder ./efs-sync-collection
-          docker run -i -v ${GITHUB_WORKSPACE}/efs-sync-collection:/var/task efs-sync-collection-lambda-builder
-
       - name: Build Notification functions
         run: |
           rm -rf node_modules/
@@ -58,21 +52,9 @@ jobs:
 
       - name: Set File Permissions
         run: |
-          chmod 0666 ./efs-sync-collection
           chmod 0666 ./notification-code
           chmod 0666 ./process-log
           chmod 0666 ./cloudwatch-alarms-to-slack
-  
-      - name: Create efs sync Archive
-        run: |
-          sudo -s sh -c 'cd efs-sync-collection && zip -r ../efs-sync-collection.zip ./*'
-          sudo -s sh -c  'pwd'
-
-      - name: Upload efs sync artifact for deployment job
-        uses: actions/upload-artifact@v3
-        with:
-          name: efs-sync-collection
-          path: efs-sync-collection.zip
 
       - name: Create Notification Archive
         run: |
@@ -116,11 +98,11 @@ jobs:
       
       - name: Deploy aws Lambda functions
         run: |
-          aws lambda update-function-code --function-name ${{ matrix.environment }}-efs-sync-collection --zip-file fileb://./efs-sync-collection.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-main-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-status-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-datasette-tiles-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-datasette-slack-notifier --zip-file fileb://./notification-code.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-data-val-fe-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-send-alarms-to-slack --zip-file fileb://./cloudwatch-alarms-to-slack.zip
 
       - name: Deploy aws Process log Lambda functions
@@ -129,5 +111,6 @@ jobs:
           aws lambda update-function-code --function-name ${{ matrix.environment }}-datasette-tiles-cdn-logs-process --zip-file fileb://./process-log.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-main-cdn-logs-process --zip-file fileb://./process-log.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-status-cdn-logs-process --zip-file fileb://./process-log.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-data-val-fe-cdn-logs-process --zip-file fileb://./process-log.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-root-to-www-logs-process --zip-file fileb://./process-log.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-collection-data-logs-process --zip-file fileb://./process-log.zip
