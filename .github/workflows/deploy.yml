@@ -103,6 +103,7 @@ jobs:
           aws lambda update-function-code --function-name ${{ matrix.environment }}-datasette-tiles-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-datasette-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-data-val-fe-slack-notifier --zip-file fileb://./notification-code.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-data-val-be-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-send-alarms-to-slack --zip-file fileb://./cloudwatch-alarms-to-slack.zip
 
       - name: Deploy aws Process log Lambda functions
@@ -112,5 +113,6 @@ jobs:
           aws lambda update-function-code --function-name ${{ matrix.environment }}-main-cdn-logs-process --zip-file fileb://./process-log.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-status-cdn-logs-process --zip-file fileb://./process-log.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-data-val-fe-cdn-logs-process --zip-file fileb://./process-log.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-data-val-be-cdn-logs-process --zip-file fileb://./process-log.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-root-to-www-logs-process --zip-file fileb://./process-log.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-collection-data-logs-process --zip-file fileb://./process-log.zip
