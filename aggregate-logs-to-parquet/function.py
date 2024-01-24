@@ -12,9 +12,7 @@ def lambda_handler(event, context):
 # this function should read the logs from cloudfront, and combine them into a single file
 def combineLogs():
     session = boto3.Session(
-        aws_access_key_id='YOUR_ACCESS_KEY',
-        aws_secret_access_key='YOUR_SECRET_KEY',
-        region_name='YOUR_REGION_NAME'
+        region_name='eu-west-2'
     )
 
     client = session.client('logs')
