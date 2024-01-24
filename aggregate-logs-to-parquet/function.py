@@ -4,9 +4,29 @@ import boto3
 logBucket = 'development-data-val-be-cdn-logs'
 reportBucket = 'development-reporting'
 filename = 'combined.log'
+log_group_name = '/aws/cloudfront/development-data-val-fe-cdn-logs'
 
 def lambda_handler(event, context):
-    copyFileTest()
+    combineLogs()
+
+# this function should read the logs from cloudfront, and combine them into a single file
+def combineLogs():
+    session = boto3.Session(
+        aws_access_key_id='YOUR_ACCESS_KEY',
+        aws_secret_access_key='YOUR_SECRET_KEY',
+        region_name='YOUR_REGION_NAME'
+    )
+
+    client = session.client('logs')
+
+    response = client.filter_log_events(
+        logGroupName='/aws/cloudfront/development-data-val-fe-cdn-logs'
+    )
+
+    print('printing the last 10 messages')
+    for event in response['events'][:10]:
+        print(event['message'])
+
 
 # def saveLogsToParquet():
 #     con = duckdb.connect()
@@ -19,6 +39,6 @@ def lambda_handler(event, context):
 
 
 # this function should copy the combined.log file from the CDN logs bucket to the reporting bucket
-def copyFileTest():
-    s3 = boto3.resource('s3')
-    s3.meta.client.copy_object(Bucket=reportBucket, Key='copied-' + filename, CopySource={'Bucket': logBucket, 'Key': filename})
+# def copyFileTest():
+#     s3 = boto3.resource('s3')
+#     s3.meta.client.copy_object(Bucket=reportBucket, Key='copied-' + filename, CopySource={'Bucket': logBucket, 'Key': filename})
