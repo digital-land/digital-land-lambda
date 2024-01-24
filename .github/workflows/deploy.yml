@@ -56,17 +56,6 @@ jobs:
           chmod 0666 ./process-log
           chmod 0666 ./cloudwatch-alarms-to-slack
           chmod 0666 ./aggregate-logs-to-parquet
-  
-      - name: Create efs sync Archive
-        run: |
-          sudo -s sh -c 'cd efs-sync-collection && zip -r ../efs-sync-collection.zip ./*'
-          sudo -s sh -c  'pwd'
-
-      - name: Upload efs sync artifact for deployment job
-        uses: actions/upload-artifact@v3
-        with:
-          name: efs-sync-collection
-          path: efs-sync-collection.zip
 
       - name: Create Notification Archive
         run: |
