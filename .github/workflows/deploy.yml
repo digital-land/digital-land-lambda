@@ -50,6 +50,11 @@ jobs:
           docker build -t ${{ matrix.environment }}-notification-builder ./notification-code
           docker run -i -v ${GITHUB_WORKSPACE}/notification-code:/var/task ${{ matrix.environment }}-notification-builder
 
+      - name: Build Aggregate logs to parquet functions
+        run: |
+          docker build -t ${{ matrix.environment }}-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
+          docker run -i -v ${GITHUB_WORKSPACE}/aggregate-logs-to-parquet:/var/task ${{ matrix.environment }}-aggregate-logs-to-parquet
+
       - name: Set File Permissions
         run: |
           chmod 0666 ./notification-code
@@ -92,7 +97,7 @@ jobs:
 
       - name: Create Aggregate logs to Parquet Archive
         run: |
-          sudo -s sh -c 'cd aggregate-logs-to-parquet && zip -r ../aggregate-logs-to-parquet ./function.py'
+          sudo -s sh -c 'cd aggregate-logs-to-parquet && zip -r ../aggregate-logs-to-parquet ./*'
           sudo -s sh -c  'pwd'
   
       - name: Upload Aggregate logs to Parquet artifact for deployment job
