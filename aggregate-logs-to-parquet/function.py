@@ -1,12 +1,13 @@
 # import duckdb
 import boto3
+import sys
 
 logBucket = 'development-data-val-be-cdn-logs'
 reportBucket = 'development-reporting'
 filename = 'combined.log'
 log_group_name = '/aws/cloudfront/development-data-val-fe-cdn-logs'
 
-def lambda_handler(event, context):
+def handler(event, context):
     # combineLogs()
     return 'Testing' + sys.version + '!'
 
