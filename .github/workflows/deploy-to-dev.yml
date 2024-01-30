@@ -17,9 +17,9 @@ jobs:
 
         - name: Build Aggregate logs to parquet functions
           run: |
-            # docker build -t ${{ matrix.environment }}-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
-            docker build --platform linux/amd64 -t ${{ matrix.environment }}-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
-            # docker run -i -v ${GITHUB_WORKSPACE}/aggregate-logs-to-parquet:/var/task ${{ matrix.environment }}-aggregate-logs-to-parquet
+            # docker build -t development-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
+            docker build --platform linux/amd64 -t development-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
+            # docker run -i -v ${GITHUB_WORKSPACE}/aggregate-logs-to-parquet:/var/task development-aggregate-logs-to-parquet
 
         - name: Set File Permissions
           run: |
@@ -45,7 +45,7 @@ jobs:
         
         - name: Deploy aws Process log Lambda functions
           run: |
-            aws lambda update-function-code --function-name ${{ matrix.environment }}-aggregate-logs-parquet --zip-file fileb://./aggregate-logs-to-parquet.zip
+            aws lambda update-function-code --function-name development-aggregate-logs-parquet --zip-file fileb://./aggregate-logs-to-parquet.zip
 
 
     
