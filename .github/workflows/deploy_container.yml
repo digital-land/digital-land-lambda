@@ -1,0 +1,77 @@
+name: Deploy Container
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: environment
+        description: The environment to deploy to.
+
+jobs:
+  detect-environments:
+    runs-on: ubuntu-latest
+    outputs:
+      environments: ${{ steps.environments.outputs.result }}
+    steps:
+      - uses: actions/github-script@v6
+        id: environments
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          result-encoding: json
+          script: |
+            if (context.payload?.inputs?.environment) return [context.payload?.inputs?.environment];
+            const {data: {environments}} = 
+              await github.request(`GET /repos/${process.env.GITHUB_REPOSITORY}/environments`);
+            return environments.map(e => e.name)
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [detect-environments]
+    strategy:
+      matrix:
+        environment: ${{ fromJSON(needs.detect-environments.outputs.environments) }}
+    environment: ${{ matrix.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install aws cli
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip -q awscliv2.zip
+          sudo ./aws/install --update
+          sudo apt-get update
+          sudo apt-get install -y rsync
+
+      - name: Build Aggregate logs to parquet functions
+        run: |
+          # docker build -t ${{ matrix.environment }}-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
+          docker build --platform linux/amd64 -t ${{ matrix.environment }}-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
+          # docker run -i -v ${GITHUB_WORKSPACE}/aggregate-logs-to-parquet:/var/task ${{ matrix.environment }}-aggregate-logs-to-parquet
+
+      - name: Set File Permissions
+        run: |
+          chmod 0666 ./aggregate-logs-to-parquet
+
+      - name: Create Aggregate logs to Parquet Archive
+        run: |
+          sudo -s sh -c 'cd aggregate-logs-to-parquet && zip -r ../aggregate-logs-to-parquet ./*'
+          sudo -s sh -c  'pwd'
+  
+      - name: Upload Aggregate logs to Parquet artifact for deployment job
+        uses: actions/upload-artifact@v3
+        with:
+          name: aggregate-logs-to-parquet
+          path: aggregate-logs-to-parquet.zip
+
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1-node16
+        with:
+          aws-access-key-id: ${{ secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+      
+      - name: Deploy aws Process log Lambda functions
+        run: |
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-aggregate-logs-parquet --zip-file fileb://./aggregate-logs-to-parquet.zip

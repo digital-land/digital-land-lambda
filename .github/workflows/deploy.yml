@@ -50,18 +50,18 @@ jobs:
           docker build -t ${{ matrix.environment }}-notification-builder ./notification-code
           docker run -i -v ${GITHUB_WORKSPACE}/notification-code:/var/task ${{ matrix.environment }}-notification-builder
 
-      - name: Build Aggregate logs to parquet functions
-        run: |
-          # docker build -t ${{ matrix.environment }}-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
-          docker build --platform linux/amd64 -t ${{ matrix.environment }}-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
-          # docker run -i -v ${GITHUB_WORKSPACE}/aggregate-logs-to-parquet:/var/task ${{ matrix.environment }}-aggregate-logs-to-parquet
+      # - name: Build Aggregate logs to parquet functions
+      #   run: |
+      #     # docker build -t ${{ matrix.environment }}-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
+      #     docker build --platform linux/amd64 -t ${{ matrix.environment }}-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
+      #     # docker run -i -v ${GITHUB_WORKSPACE}/aggregate-logs-to-parquet:/var/task ${{ matrix.environment }}-aggregate-logs-to-parquet
 
       - name: Set File Permissions
         run: |
           chmod 0666 ./notification-code
           chmod 0666 ./process-log
           chmod 0666 ./cloudwatch-alarms-to-slack
-          chmod 0666 ./aggregate-logs-to-parquet
+          # chmod 0666 ./aggregate-logs-to-parquet
 
       - name: Create Notification Archive
         run: |
@@ -96,16 +96,16 @@ jobs:
           name: cloudwatch-alarms-to-slack
           path: cloudwatch-alarms-to-slack.zip
 
-      - name: Create Aggregate logs to Parquet Archive
-        run: |
-          sudo -s sh -c 'cd aggregate-logs-to-parquet && zip -r ../aggregate-logs-to-parquet ./*'
-          sudo -s sh -c  'pwd'
+      # - name: Create Aggregate logs to Parquet Archive
+      #   run: |
+      #     sudo -s sh -c 'cd aggregate-logs-to-parquet && zip -r ../aggregate-logs-to-parquet ./*'
+      #     sudo -s sh -c  'pwd'
   
-      - name: Upload Aggregate logs to Parquet artifact for deployment job
-        uses: actions/upload-artifact@v3
-        with:
-          name: aggregate-logs-to-parquet
-          path: aggregate-logs-to-parquet.zip
+      # - name: Upload Aggregate logs to Parquet artifact for deployment job
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: aggregate-logs-to-parquet
+      #     path: aggregate-logs-to-parquet.zip
 
       - name: Set up AWS credentials
         uses: aws-actions/configure-aws-credentials@v1-node16
@@ -134,4 +134,4 @@ jobs:
           aws lambda update-function-code --function-name ${{ matrix.environment }}-data-val-be-cdn-logs-process --zip-file fileb://./process-log.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-root-to-www-logs-process --zip-file fileb://./process-log.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-collection-data-logs-process --zip-file fileb://./process-log.zip
-          aws lambda update-function-code --function-name ${{ matrix.environment }}-aggregate-logs-parquet --zip-file fileb://./aggregate-logs-to-parquet.zip
+          # aws lambda update-function-code --function-name ${{ matrix.environment }}-aggregate-logs-parquet --zip-file fileb://./aggregate-logs-to-parquet.zip
