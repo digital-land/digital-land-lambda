@@ -1,42 +1,55 @@
-# import duckdb
+import duckdb
 import boto3
+import datetime
+import time
 
-logBucket = 'development-data-val-be-cdn-logs'
+# logBucket = 'development-data-val-be-cdn-logs'
+# filename = 'combined.log'
 reportBucket = 'development-reporting'
-filename = 'combined.log'
-log_group_name = '/aws/cloudfront/development-data-val-fe-cdn-logs'
+
+log_group_names = [
+    'development-data-val-fe-cdn-logs',
+    'development-data-val-be-cdn-logs'
+]
 
 def lambda_handler(event, context):
-    combineLogs()
+    for log_group_name in log_group_names:
+        combineLogs(log_group_name)
 
-# this function should read the logs from cloudfront, and combine them into a single file
-def combineLogs():
+def combineLogs(log_group_name):
     session = boto3.Session(
         region_name='eu-west-2'
     )
 
     client = session.client('logs')
 
+    # Get the current time
+    last_midnight = datetime.datetime.combine(datetime.date.today(), datetime.time()).timestamp() * 1000
+
+    # Subtract 24 hours from the current time
+    one_day = datetime.timedelta(days=1).timestamp() * 1000
+
+    # get the logs from cloudfront
     response = client.filter_log_events(
-        logGroupName='/aws/cloudfront/development-data-val-fe-cdn-logs'
+        logGroupName=f'/aws/cloudfront/{log_group_name}',
+        startTime=last_midnight - one_day,
+        endTime=last_midnight
     )
 
-    print('printing the last 10 messages')
-    for event in response['events'][:10]:
-        print(event['message'])
+    # create a duckdb connection
+    con = duckdb.connect()
 
+    # get the json keys of the first message
+    # this will be used to create the table
+    json_keys = list(response['events'][0]['message'].keys())
 
-# def saveLogsToParquet():
-#     con = duckdb.connect()
-#     con.install_extension('https')
-#     con.load_extension('https')
-#     con.execute("SET s3_region='eu-west-2';")
-#     con.execute("SET s3_access_key_id='AKIA55A7WSGA7H2V4GHR';")
-#     con.execute("SET s3_secret_access_key='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';")
-#     con.execute(f"COPY (SELECT * FROM read_json('s3://bucketName/*.json') to 's3://bucketName/parquet/' (format 'parquet');")
+    # create the table
+    con.execute(f"CREATE TABLE logs ({', '.join(json_keys)});")
 
+    # insert the data into the table
+    for event in response['events']:
+        values = ', '.join([f'\'{value}\'' for value in event['message'].values()])
+        con.execute(f"INSERT INTO logs VALUES ({values});")
 
-# this function should copy the combined.log file from the CDN logs bucket to the reporting bucket
-# def copyFileTest():
-#     s3 = boto3.resource('s3')
-#     s3.meta.client.copy_object(Bucket=reportBucket, Key='copied-' + filename, CopySource={'Bucket': logBucket, 'Key': filename})
+    # save the table to parquet
+    con.execute(f"COPY logs TO 's3://{reportBucket}/{log_group_name}/{datetime.date.today().isoformat()}' (format 'parquet');")
