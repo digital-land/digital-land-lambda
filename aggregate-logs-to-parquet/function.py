@@ -53,3 +53,5 @@ def combineLogs(log_group_name):
 
     # save the table to parquet
     con.execute(f"COPY logs TO 's3://{reportBucket}/{log_group_name}/{datetime.date.today().isoformat()}' (format 'parquet');")
+
+    print(f'Successfully made parquet file: {log_group_name}/{datetime.date.today().isoformat()}')
