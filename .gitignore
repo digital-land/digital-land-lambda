@@ -44,6 +44,6 @@ docker-compose.override.yml
 coverage.xml
 .secrets
 
-*.zip
+# *.zip
 
 aggregate-logs-to-parquet/venv/*
