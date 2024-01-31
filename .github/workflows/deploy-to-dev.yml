@@ -17,11 +17,11 @@ jobs:
             pip install -r ./aggregate-logs-to-parquet/requirements.txt
             pip install awscli
 
-        - name: Build Aggregate logs to parquet functions
-          run: |
-            # docker build -t development-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
-            docker build --platform linux/amd64 -t development-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
-            # docker run -i -v ${GITHUB_WORKSPACE}/aggregate-logs-to-parquet:/var/task development-aggregate-logs-to-parquet
+        # - name: Build Aggregate logs to parquet functions
+        #   run: |
+        #     # docker build -t development-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
+        #     docker build --platform linux/amd64 -t development-aggregate-logs-to-parquet ./aggregate-logs-to-parquet
+        #     # docker run -i -v ${GITHUB_WORKSPACE}/aggregate-logs-to-parquet:/var/task development-aggregate-logs-to-parquet
 
         - name: Set File Permissions
           run: |
