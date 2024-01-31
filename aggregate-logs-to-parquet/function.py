@@ -1,4 +1,4 @@
-import duckdb
+# import duckdb
 import boto3
 import sys
 
