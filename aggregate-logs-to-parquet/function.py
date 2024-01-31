@@ -7,7 +7,7 @@ reportBucket = 'development-reporting'
 filename = 'combined.log'
 log_group_name = '/aws/cloudfront/development-data-val-fe-cdn-logs'
 
-def lambdahandler(event, context):
+def handler(event, context):
     # combineLogs()
     return 'Testing' + sys.version + '!'
 
