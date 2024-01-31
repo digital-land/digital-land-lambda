@@ -1,4 +1,4 @@
-# import duckdb
+import duckdb
 import boto3
 import sys
 
@@ -8,8 +8,8 @@ filename = 'combined.log'
 log_group_name = '/aws/cloudfront/development-data-val-fe-cdn-logs'
 
 def lambda_handler(event, context):
-    # combineLogs()
-    return 'Testing' + sys.version + '!'
+    combineLogs()
+    # return 'Testing' + sys.version + '!'
 
 # this function should read the logs from cloudfront, and combine them into a single file
 def combineLogs():
