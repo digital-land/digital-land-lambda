@@ -45,5 +45,6 @@ coverage.xml
 .secrets
 
 # *.zip
+package/*
 
 aggregate-logs-to-parquet/venv/*
