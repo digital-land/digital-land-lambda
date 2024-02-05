@@ -1,4 +1,4 @@
-# import duckdb
+import duckdb
 import boto3
 import sys
 
@@ -13,6 +13,8 @@ def lambda_handler(event, context):
 
 # this function should read the logs from cloudfront, and combine them into a single file
 def combineLogs():
+    print('Container: conbineLogs start')
+
     session = boto3.Session(
         region_name='eu-west-2'
     )
