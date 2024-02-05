@@ -6,6 +6,9 @@ jobs:
     environment: development
     env:
       DOCKER_REPO: ${{ secrets.DEPLOY_DOCKER_REPOSITORY }}
+    defaults:
+      run:
+        working-directory: ./aggregate-logs-to-parquet
     steps:
       - uses: actions/checkout@v4
 
