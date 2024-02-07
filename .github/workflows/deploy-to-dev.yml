@@ -39,3 +39,7 @@ jobs:
       - run: docker push $DOCKER_REPO:${{ steps.vars.outputs.sha_short }}
 
       - run: docker push $DOCKER_REPO:latest
+
+      - name: Deploy aws log parquet Lambda functions
+        run: |
+          aws lambda update-function-code --function-name development-aggregate-logs-parquet --image-uri 955696714113.dkr.ecr.eu-west-2.amazonaws.com/development-aggregate-logs-lambda:latest
