@@ -8,8 +8,7 @@ import time
 reportBucket = 'development-reporting'
 
 log_group_names = [
-    'development-data-val-fe-cdn-logs',
-    'development-data-val-be-cdn-logs'
+    'development-data-val-fe-cdn-logs'
 ]
 
 def lambda_handler(event, context):
@@ -24,18 +23,18 @@ def combineLogs(log_group_name):
     client = session.client('logs')
 
     # Get the current time
-    last_midnight = int(datetime.datetime.combine(datetime.date.today(), datetime.time()).timestamp() * 1000)
+    last_midnight = datetime.datetime.combine(datetime.datetime.today(), datetime.time.min)
 
     # Subtract 24 hours from the current time
-    one_day = int(datetime.timedelta(days=1).seconds * 1000)
+    one_day = datetime.timedelta(days=1)
 
     print('getting logs for: ' + log_group_name + ' from: ' + str(last_midnight - one_day) + ' to: ' + str(last_midnight))
 
     # get the logs from cloudfront
     response = client.filter_log_events(
         logGroupName=f'/aws/cloudfront/{log_group_name}',
-        startTime=last_midnight - one_day,
-        endTime=last_midnight
+        startTime=int(last_midnight.timestamp() - one_day.total_seconds()),
+        endTime=int(last_midnight.timestamp())
     )
 
     if len(response['events']) == 0:
@@ -61,3 +60,6 @@ def combineLogs(log_group_name):
     con.execute(f"COPY logs TO 's3://{reportBucket}/{log_group_name}/{datetime.date.today().isoformat()}' (format 'parquet');")
 
     print(f'Successfully made parquet file: {log_group_name}/{datetime.date.today().isoformat()}')
+
+
+combineLogs('development-data-val-fe-cdn-logs')
