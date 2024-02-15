@@ -26,15 +26,15 @@ def combineLogs(log_group_name):
     last_midnight = datetime.datetime.combine(datetime.datetime.today(), datetime.time.min)
 
     # Subtract 24 hours from the current time
-    one_day = datetime.timedelta(days=30)
+    one_day = datetime.timedelta(days=1)
 
     print('getting logs for: ' + log_group_name + ' from: ' + str(last_midnight - one_day) + ' to: ' + str(last_midnight))
 
     # get the logs from cloudfront
     response = client.filter_log_events(
         logGroupName=f'/aws/cloudfront/{log_group_name}',
-        startTime=int(last_midnight.timestamp() - one_day.total_seconds()),
-        endTime=int(last_midnight.timestamp())
+        startTime=int(last_midnight.timestamp() * 1000 - one_day.total_seconds()),
+        endTime=int(last_midnight.timestamp() * 1000)
     )
 
     if len(response['events']) == 0:
