@@ -26,7 +26,7 @@ def combineLogs(log_group_name):
     last_midnight = datetime.datetime.combine(datetime.datetime.today(), datetime.time.min)
 
     # Subtract 24 hours from the current time
-    one_day = datetime.timedelta(days=1)
+    one_day = datetime.timedelta(days=30)
 
     print('getting logs for: ' + log_group_name + ' from: ' + str(last_midnight - one_day) + ' to: ' + str(last_midnight))
 
