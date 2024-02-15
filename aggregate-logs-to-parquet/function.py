@@ -29,12 +29,18 @@ def combineLogs(log_group_name):
     # Subtract 24 hours from the current time
     one_day = int(datetime.timedelta(days=1).seconds * 1000)
 
+    print('getting logs for: ' + log_group_name + ' from: ' + str(last_midnight - one_day) + ' to: ' + str(last_midnight))
+
     # get the logs from cloudfront
     response = client.filter_log_events(
         logGroupName=f'/aws/cloudfront/{log_group_name}',
         startTime=last_midnight - one_day,
         endTime=last_midnight
     )
+
+    if len(response['events']) == 0:
+        print('No logs found for: ' + log_group_name)
+        return
 
     # create a duckdb connection
     con = duckdb.connect()
