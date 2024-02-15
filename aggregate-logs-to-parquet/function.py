@@ -24,10 +24,10 @@ def combineLogs(log_group_name):
     client = session.client('logs')
 
     # Get the current time
-    last_midnight = datetime.datetime.combine(datetime.date.today(), datetime.time()).timestamp() * 1000
+    last_midnight = int(datetime.datetime.combine(datetime.date.today(), datetime.time()).timestamp() * 1000)
 
     # Subtract 24 hours from the current time
-    one_day = datetime.timedelta(days=1).seconds * 1000
+    one_day = int(datetime.timedelta(days=1).seconds * 1000)
 
     # get the logs from cloudfront
     response = client.filter_log_events(
