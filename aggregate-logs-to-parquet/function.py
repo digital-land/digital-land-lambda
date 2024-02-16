@@ -1,3 +1,4 @@
+import json
 import duckdb
 import boto3
 import datetime
@@ -44,20 +45,42 @@ def combineLogs(log_group_name):
 
     # get the json keys of the first message
     # this will be used to create the table
-    json_keys = list(response['events'][0]['message'].keys())
 
-    # create the table
-    con.execute(f"CREATE TABLE logs ({', '.join(json_keys)});")
+    non_json_messages = {}
+    json_messages = {}
 
-    # insert the data into the table
-    for event in response['events']:
-        values = ', '.join([f'\'{value}\'' for value in event['message'].values()])
-        con.execute(f"INSERT INTO logs VALUES ({values});")
+    # if response['events'][0]['message'] is a json, parse it and get the keys
+    try:
+        messageJson = json.loads(response['events'][0]['message'])
+        json_keys = list(messageJson.keys())
+        key = ','.join(json_keys)
+        if key in json_messages:
+            json_messages[key] += 1
+        else:
+            json_messages[key] = 1
+    except:
+        print('Message is not a json, message: ' + response['events'][0]['message'] + ' for log group: ' + log_group_name)
+        if response['events'][0]['message'] in non_json_messages:
+            non_json_messages[response['events'][0]['message']] += 1
+        else:
+            non_json_messages[response['events'][0]['message']] = 1
 
-    # save the table to parquet
-    con.execute(f"COPY logs TO 's3://{reportBucket}/{log_group_name}/{datetime.date.today().isoformat()}' (format 'parquet');")
+    print(json_messages)
+    print(non_json_messages)
 
-    print(f'Successfully made parquet file: {log_group_name}/{datetime.date.today().isoformat()}')
+
+    # # create the table
+    # con.execute(f"CREATE TABLE logs ({', '.join(json_keys)});")
+
+    # # insert the data into the table
+    # for event in response['events']:
+    #     values = ', '.join([f'\'{value}\'' for value in event['message'].values()])
+    #     con.execute(f"INSERT INTO logs VALUES ({values});")
+
+    # # save the table to parquet
+    # con.execute(f"COPY logs TO 's3://{reportBucket}/{log_group_name}/{datetime.date.today().isoformat()}' (format 'parquet');")
+
+    # print(f'Successfully made parquet file: {log_group_name}/{datetime.date.today().isoformat()}')
 
 
 combineLogs('development-data-val-fe-cdn-logs')
