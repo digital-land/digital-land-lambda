@@ -32,9 +32,7 @@ def combineLogs(log_group_name):
 
     # get the logs from cloudfront
     response = client.filter_log_events(
-        logGroupName=f'/aws/cloudfront/{log_group_name}',
-        startTime=int(last_midnight.timestamp() * 1000 - one_day.total_seconds()),
-        endTime=int(last_midnight.timestamp() * 1000)
+        logGroupName=f'/aws/cloudfront/{log_group_name}'
     )
 
     if len(response['events']) == 0:
