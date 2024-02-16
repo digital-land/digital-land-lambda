@@ -49,21 +49,24 @@ def combineLogs(log_group_name):
     non_json_messages = {}
     json_messages = {}
 
-    # if response['events'][0]['message'] is a json, parse it and get the keys
-    try:
-        messageJson = json.loads(response['events'][0]['message'])
-        json_keys = list(messageJson.keys())
-        key = ','.join(json_keys)
-        if key in json_messages:
-            json_messages[key] += 1
-        else:
-            json_messages[key] = 1
-    except:
-        print('Message is not a json, message: ' + response['events'][0]['message'] + ' for log group: ' + log_group_name)
-        if response['events'][0]['message'] in non_json_messages:
-            non_json_messages[response['events'][0]['message']] += 1
-        else:
-            non_json_messages[response['events'][0]['message']] = 1
+    
+
+    for event in response['events']:
+        # if event['message'] is a json, parse it and get the keys
+        try:
+            messageJson = json.loads(event['message'])
+            json_keys = list(messageJson.keys())
+            key = ','.join(json_keys)
+            if key in json_messages:
+                json_messages[key] += 1
+            else:
+                json_messages[key] = 1
+        except:
+            print('Message is not a json, message: ' + event['message'] + ' for log group: ' + log_group_name)
+            if event['message'] in non_json_messages:
+                non_json_messages[event['message']] += 1
+            else:
+                non_json_messages[event['message']] = 1
 
     print(json_messages)
     print(non_json_messages)
