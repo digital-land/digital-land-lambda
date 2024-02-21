@@ -3,15 +3,9 @@ import time
 from LogCombiner import LogCombiner
 from log_schemas.pageView import pageViewSchema
 
-reportBucket = 'development-reporting'
+local_parquet_file_path = "./parquets"
 
-schemas = {
-    'PageView': pageViewSchema
-}
-
-parquet_file_path = f"s3://{reportBucket}"
-
-def lambda_handler(event, context):
+def run():
     last_midnight = datetime.datetime.combine(datetime.datetime.today(), datetime.time.min)
     one_day = datetime.timedelta(days=1)
     schemas = {
@@ -19,4 +13,7 @@ def lambda_handler(event, context):
     }
 
     logCombiner = LogCombiner('/application/development-data-val-fe', schemas, last_midnight - one_day, last_midnight)
-    logCombiner.combineLogs(parquet_file_path)
+    logCombiner.combineLogs(local_parquet_file_path)
+
+
+run()
