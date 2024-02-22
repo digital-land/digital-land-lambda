@@ -31,6 +31,9 @@ class LogCombiner:
             startTime=int(self.start_time.timestamp() * 1000),
             endTime=int(self.end_time.timestamp() * 1000)
         )
+
+        print('got ' + str(len(response['events'])) + ' logs')
+
         return response['events']
 
     def _add_logs_to_tables(self, logs):
