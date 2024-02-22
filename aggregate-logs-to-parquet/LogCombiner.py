@@ -102,7 +102,7 @@ class LogCombiner:
         # save created tables to parquet
         for table in self.created_tables:
             # Define the directory path
-            dir_path = f"{save_file_path}/{self.log_group_name}/{table}"
+            dir_path = f"{save_file_path}{self.log_group_name}/{table}"
 
             self.duckdb_connection.execute(f"COPY {table} TO '{dir_path}/{self.start_time.strftime('%Y-%m-%d')}.parquet' (format 'parquet');")
             self.duckdb_connection.execute(f"DROP TABLE {table};")
