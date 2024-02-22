@@ -16,6 +16,7 @@ class LogCombiner:
         self.created_tables = {}
 
         self.duckdb_connection = duckdb.connect()
+        self.duckdb_connection.execute("SET home_directory='/tmp'")
         self.duckdb_connection.install_extension('https')
         self.duckdb_connection.load_extension('https')
         self.duckdb_connection.execute("SET s3_region='eu-west-2';")
