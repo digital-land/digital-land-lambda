@@ -2,7 +2,6 @@ import json
 import os
 import duckdb
 import boto3
-import datetime
 import time
 from helpers import isJson
 
@@ -18,9 +17,18 @@ class LogCombiner:
         self.created_tables = {}
 
     def combineLogs(self, save_file_path):
+        start_time = time.time()
         logs = self._fetch_logs()
+        fetch_logs_time = time.time()
+        print(f"Time taken to fetch logs: {fetch_logs_time - start_time} seconds")
+
         self._add_logs_to_tables(logs)
+        add_logs_to_tables_time = time.time()
+        print(f"Time taken to add logs to tables: {add_logs_to_tables_time - fetch_logs_time} seconds")
+
         self._save_tables_to_parquet(save_file_path)
+        save_tables_to_parquet_time = time.time()
+        print(f"Time taken to save tables to parquet: {save_tables_to_parquet_time - add_logs_to_tables_time} seconds")
 
     def _fetch_logs(self):
         print('getting logs for: ' + self.log_group_name + ' from: ' + str(self.start_time) + ' to: ' + str(self.end_time))
