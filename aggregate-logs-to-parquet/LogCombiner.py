@@ -46,6 +46,8 @@ class LogCombiner:
 
     def _add_logs_to_tables(self, logs):
         unrecognised_message_types = set()
+        batch_data = {}
+
         for event in logs:
             if not isJson(event['message']):
                 continue
@@ -75,11 +77,18 @@ class LogCombiner:
             field_names = [field['name'] for field in schema]
 
             # get field values
-            field_values = [f'\'{message_json[field]}\'' for field in field_names]
+            field_values = [message_json[field] for field in field_names]
 
-            # insert the data into the table
-            self.duckdb_connection.execute(f"INSERT INTO {message_type} VALUES ({', '.join(field_values)});")
-        
+            # add the data to the batch
+            if message_type not in batch_data:
+                batch_data[message_type] = []
+            batch_data[message_type].append(field_values)
+
+        # insert the batch data into the tables
+        for message_type, data in batch_data.items():
+            placeholders = ', '.join(['?' for _ in data[0]])
+            self.duckdb_connection.executemany(f"INSERT INTO {message_type} VALUES ({placeholders});", data)
+
         if len(unrecognised_message_types) > 0:
             print(f"Unrecognised message types: {unrecognised_message_types}")
 

@@ -22,7 +22,7 @@ def run():
         'PageView': pageViewSchema
     }
 
-    logCombiner = LogCombiner('/application/development-data-val-fe', schemas, last_midnight - hours, last_midnight)
+    logCombiner = LogCombiner('/application/development-data-val-fe', schemas, last_midnight - one_day, last_midnight)
     logCombiner.combineLogs(parquet_file_path)
 
 run()
