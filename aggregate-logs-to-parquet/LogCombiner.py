@@ -19,6 +19,8 @@ class LogCombiner:
         self.duckdb_connection.execute("SET home_directory='/tmp'")
         self.duckdb_connection.install_extension('https')
         self.duckdb_connection.load_extension('https')
+        self.duckdb_connection.install_extension('aws')
+        self.duckdb_connection.load_extension('aws')
         self.duckdb_connection.execute("SET s3_region='eu-west-2';")
 
 
