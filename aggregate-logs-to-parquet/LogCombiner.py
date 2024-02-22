@@ -34,6 +34,7 @@ class LogCombiner:
         return response['events']
 
     def _add_logs_to_tables(self, logs):
+        unrecognised_message_types = set()
         for event in logs:
             if not isJson(event['message']):
                 continue
@@ -47,7 +48,7 @@ class LogCombiner:
             message_type = message_json['type']
 
             if message_type not in self.schemas:
-                print(f"Message type not found in schemas: {message_type}")
+                unrecognised_message_types.add(message_json['type'])
                 continue
 
             schema = self.schemas[message_type]
@@ -67,6 +68,9 @@ class LogCombiner:
 
             # insert the data into the table
             self.duckdb_connection.execute(f"INSERT INTO {message_type} VALUES ({', '.join(field_values)});")
+        
+        if len(unrecognised_message_types) > 0:
+            print(f"Unrecognised message types: {unrecognised_message_types}")
 
     def _save_tables_to_parquet(self, save_file_path):
         # save created tables to parquet
