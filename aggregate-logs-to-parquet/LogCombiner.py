@@ -13,8 +13,13 @@ class LogCombiner:
         self.schemas = log_schemas
         self.session = boto3.Session(region_name='eu-west-2')
         self.client = self.session.client('logs')
-        self.duckdb_connection = duckdb.connect()
         self.created_tables = {}
+
+        self.duckdb_connection = duckdb.connect()
+        self.duckdb_connection.install_extension('https')
+        self.duckdb_connection.load_extension('https')
+        self.duckdb_connection.execute("SET s3_region='eu-west-2';")
+
 
     def combineLogs(self, save_file_path):
         start_time = time.time()
