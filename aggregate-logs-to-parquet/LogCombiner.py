@@ -103,10 +103,6 @@ class LogCombiner:
         for table in self.created_tables:
             # Define the directory path
             dir_path = f"{save_file_path}/{self.log_group_name}/{table}"
-            
-            # Check if the directory exists, create it if it doesn't
-            if not os.path.exists(dir_path):
-                os.makedirs(dir_path)
 
             self.duckdb_connection.execute(f"COPY {table} TO '{dir_path}/{self.start_time.strftime('%Y-%m-%d')}.parquet' (format 'parquet');")
             self.duckdb_connection.execute(f"DROP TABLE {table};")
