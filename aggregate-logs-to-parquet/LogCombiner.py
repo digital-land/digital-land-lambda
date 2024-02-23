@@ -21,6 +21,7 @@ class LogCombiner:
         self.duckdb_connection.load_extension('https')
         self.duckdb_connection.install_extension('aws')
         self.duckdb_connection.load_extension('aws')
+        self.duckdb_connection.execute("CALL load_aws_credentials();")
         self.duckdb_connection.execute("SET s3_region='eu-west-2';")
 
 
@@ -105,6 +106,12 @@ class LogCombiner:
         for table in self.created_tables:
             # Define the directory path
             dir_path = f"{save_file_path}{self.log_group_name}/{table}"
+
+            s3 = boto3.client('s3')
+            bucket_name = 'development-reporting'
+            folder_name = dir_path
+
+            s3.put_object(Bucket=bucket_name, Key=(folder_name))
 
             self.duckdb_connection.execute(f"COPY {table} TO '{dir_path}/{self.start_time.strftime('%Y-%m-%d')}.parquet' (format 'parquet');")
             self.duckdb_connection.execute(f"DROP TABLE {table};")
