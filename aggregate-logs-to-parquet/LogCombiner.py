@@ -21,18 +21,13 @@ class LogCombiner:
         self.duckdb_connection.load_extension('https')
         self.duckdb_connection.install_extension('aws')
         self.duckdb_connection.load_extension('aws')
-        self.duckdb_connection.execute("CALL load_aws_credentials();")
+        # self.duckdb_connection.execute("CALL load_aws_credentials();")
 
+        # select * from load_aws_credentials();
         try:
-            # print out the credentials that were loaded by duckdb
-            print(self.duckdb_connection.execute("SHOW aws_credentials;").fetchall())
+            print(self.duckdb_connection.execute("CALL load_aws_credentials();").fetchall())
         except Exception as e:
-            print(f"An error occurred while fetching AWS credentials: {e}")
-
-        try:
-            print(self.duckdb_connection.execute("SELECT * FROM duckdb_secrets();").fetchall())
-        except Exception as e:
-            print(f"An error occurred while fetching DuckDB secrets: {e}")
+            print(f"An error occurred while fetching load AWS credentials: {e}")
 
         self.duckdb_connection.execute("SET s3_region='eu-west-2';")
 
