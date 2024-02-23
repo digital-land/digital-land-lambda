@@ -23,8 +23,16 @@ class LogCombiner:
         self.duckdb_connection.load_extension('aws')
         self.duckdb_connection.execute("CALL load_aws_credentials();")
 
-        # print out the credentials that were loaded by duckdb
-        print(self.duckdb_connection.execute("SHOW aws_credentials;").fetchall())
+        try:
+            # print out the credentials that were loaded by duckdb
+            print(self.duckdb_connection.execute("SHOW aws_credentials;").fetchall())
+        except Exception as e:
+            print(f"An error occurred while fetching AWS credentials: {e}")
+
+        try:
+            print(self.duckdb_connection.execute("SELECT * FROM duckdb_secrets();").fetchall())
+        except Exception as e:
+            print(f"An error occurred while fetching DuckDB secrets: {e}")
 
         self.duckdb_connection.execute("SET s3_region='eu-west-2';")
 
@@ -113,7 +121,7 @@ class LogCombiner:
 
             s3 = boto3.client('s3')
             bucket_name = 'development-reporting'
-            folder_name = 'application/development-data-val-fe/'
+            folder_name = f'application/development-data-val-fe/{table}'
 
             s3.put_object(Bucket=bucket_name, Key=(folder_name))
 
