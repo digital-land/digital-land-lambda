@@ -109,7 +109,7 @@ class LogCombiner:
 
             s3 = boto3.client('s3')
             bucket_name = 'development-reporting'
-            folder_name = dir_path
+            folder_name = 'application/development-data-val-fe/'
 
             s3.put_object(Bucket=bucket_name, Key=(folder_name))
 
