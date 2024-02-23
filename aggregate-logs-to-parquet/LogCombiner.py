@@ -22,6 +22,10 @@ class LogCombiner:
         self.duckdb_connection.install_extension('aws')
         self.duckdb_connection.load_extension('aws')
         self.duckdb_connection.execute("CALL load_aws_credentials();")
+
+        # print out the credentials that were loaded by duckdb
+        print(self.duckdb_connection.execute("SHOW aws_credentials;").fetchall())
+
         self.duckdb_connection.execute("SET s3_region='eu-west-2';")
 
 
