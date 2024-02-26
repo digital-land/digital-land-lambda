@@ -2,7 +2,6 @@
 
 pageViewSchema = [
     {"name": "timestamp", "type": "TIMESTAMP"},
-    {"name": "ipAddress", "type": "VARCHAR"},
     {"name": "sessionId", "type": "VARCHAR"},
     {"name": "pageRoute", "type": "VARCHAR"}
 ]
