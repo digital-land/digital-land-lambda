@@ -62,7 +62,7 @@ jobs:
           sudo -s sh -c  'pwd'
   
       - name: Upload Notification artifact for deployment job
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: notification-code
           path: notification-code.zip
@@ -73,7 +73,7 @@ jobs:
           sudo -s sh -c  'pwd'
   
       - name: Upload Process log artifact for deployment job
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: process-log
           path: process-log.zip
@@ -84,7 +84,7 @@ jobs:
           sudo -s sh -c  'pwd'
   
       - name: Upload Cloudwatch alarms artifact for deployment job
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cloudwatch-alarms-to-slack
           path: cloudwatch-alarms-to-slack.zip
