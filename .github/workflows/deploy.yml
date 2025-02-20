@@ -84,7 +84,7 @@ jobs:
           sudo -s sh -c  'pwd'
   
       - name: Upload Cloudwatch alarms artifact for deployment job
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v1
         with:
           name: cloudwatch-alarms-to-slack-${{ matrix.environment }}
           path: cloudwatch-alarms-to-slack.zip
