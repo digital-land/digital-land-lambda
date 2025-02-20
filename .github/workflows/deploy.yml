@@ -64,7 +64,7 @@ jobs:
       - name: Upload Notification artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: notification-code
+          name: notification-code-${{ matrix.environment }}
           path: notification-code.zip
 
       - name: Create Process log Archive
@@ -75,7 +75,7 @@ jobs:
       - name: Upload Process log artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: process-log
+          name: process-log-${{ matrix.environment }}
           path: process-log.zip
 
       - name: Create Cloudwatch alarms Archive
@@ -86,7 +86,7 @@ jobs:
       - name: Upload Cloudwatch alarms artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: cloudwatch-alarms-to-slack
+          name: cloudwatch-alarms-to-slack-${{ matrix.environment }}
           path: cloudwatch-alarms-to-slack.zip
       
       - name: Set up AWS credentials
