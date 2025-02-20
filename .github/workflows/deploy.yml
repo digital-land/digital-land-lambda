@@ -84,13 +84,13 @@ jobs:
           sudo -s sh -c  'pwd'
   
       - name: Upload Cloudwatch alarms artifact for deployment job
-        uses: actions/upload-artifact@v1
+        uses: actions/upload-artifact@v4
         with:
           name: cloudwatch-alarms-to-slack-${{ matrix.environment }}
           path: cloudwatch-alarms-to-slack.zip
       
       - name: Set up AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v1
         with:
           aws-access-key-id: ${{ secrets.DEPLOY_AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.DEPLOY_AWS_SECRET_ACCESS_KEY }}
