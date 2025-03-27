@@ -104,6 +104,7 @@ jobs:
           aws lambda update-function-code --function-name ${{ matrix.environment }}-datasette-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-data-val-fe-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-pipeline-int-api-slack-notifier --zip-file fileb://./notification-code.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-data-design-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-send-alarms-to-slack --zip-file fileb://./cloudwatch-alarms-to-slack.zip
 
       - name: Deploy aws Process log Lambda functions
