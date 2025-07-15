@@ -69,7 +69,7 @@ jobs:
 
       - name: Create Process log Archive
         run: |
-          sudo -s sh -c 'cd process-log && npm install && zip -r ../process-log.zip index.js package.json node_modules'
+          sudo -s sh -c 'cd process-log && npm install && zip -r ../process-log.zip ./*'
           sudo -s sh -c 'pwd'
   
       - name: Upload Process log artifact for deployment job
