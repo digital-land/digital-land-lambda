@@ -112,7 +112,7 @@ const handleCodeDeployLifeCycleEvent = async (event) => {
 
     if (!alreadyReported) {
         Events.push({
-            Region: RecordMessage.region,
+            Region: Events[0].Region,
             State,
             Type,
             Timestamp: Date.now(),
