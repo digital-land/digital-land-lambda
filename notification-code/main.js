@@ -40,16 +40,24 @@ const handleCodeDeployEvent = async (event) => {
                 break;
         }
 
-        Events.push({
-            Region: RecordMessage.region,
-            State,
-            Type,
-            Timestamp: Date.now(),
-        });
+        const alreadyReported = Events.some(
+            e => e.State === State && e.Type === Type
+        );
 
-        await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
+        if (!alreadyReported) {
+            Events.push({
+                Region: RecordMessage.region,
+                State,
+                Type,
+                Timestamp: Date.now(),
+            });
 
-        await setDeploymentDetails({DeploymentId, Events});
+            await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
+            await setDeploymentDetails({DeploymentId, Events});
+        } else {
+            console.log(`State "${State}" already reported for deployment ${DeploymentId}, skipping notification.`);
+        }
+
     }
 };
 
@@ -98,16 +106,23 @@ const handleCodeDeployLifeCycleEvent = async (event) => {
             break;
     }
 
-    Events.push({
-        Region: Events[0].Region,
-        State,
-        Type,
-        Timestamp: Date.now(),
-    });
+    const alreadyReported = Events.some(
+        e => e.State === State && e.Type === Type
+    );
 
-    await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
+    if (!alreadyReported) {
+        Events.push({
+            Region: RecordMessage.region,
+            State,
+            Type,
+            Timestamp: Date.now(),
+        });
 
-    await setDeploymentDetails({DeploymentId, Events});
+        await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
+        await setDeploymentDetails({DeploymentId, Events});
+    } else {
+        console.log(`State "${State}" already reported for deployment ${DeploymentId}, skipping notification.`);
+    }
 
     await codedeploy.putLifecycleEventHookExecutionStatus({
         deploymentId: DeploymentId,
