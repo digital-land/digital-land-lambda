@@ -40,16 +40,30 @@ const handleCodeDeployEvent = async (event) => {
                 break;
         }
 
-        Events.push({
-            Region: RecordMessage.region,
-            State,
-            Type,
-            Timestamp: Date.now(),
-        });
+        const FIVE_MINUTES = 5 * 60 * 1000;
+        const now = Date.now();
 
-        await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
+        const alreadyReported = Events.some(
+        (e) =>
+            e.State === State &&
+            e.Type === Type &&
+            Math.abs(now - e.Timestamp) < FIVE_MINUTES
+        );
 
-        await setDeploymentDetails({DeploymentId, Events});
+        if (!alreadyReported) {
+            Events.push({
+                Region: RecordMessage.region,
+                State,
+                Type,
+                Timestamp: Date.now(),
+            });
+
+            await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
+            await setDeploymentDetails({DeploymentId, Events});
+        } else {
+            console.log('State "${State}" already reported for deployment ${DeploymentId}, skipping notification.');
+        }
+
     }
 };
 
@@ -98,16 +112,30 @@ const handleCodeDeployLifeCycleEvent = async (event) => {
             break;
     }
 
-    Events.push({
-        Region: Events[0].Region,
-        State,
-        Type,
-        Timestamp: Date.now(),
-    });
+    const FIVE_MINUTES = 5 * 60 * 1000;
+    const now = Date.now();
 
-    await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
+    const alreadyReported = Events.some(
+    (e) =>
+        e.State === State &&
+        e.Type === Type &&
+        Math.abs(now - e.Timestamp) < FIVE_MINUTES
+    );
 
-    await setDeploymentDetails({DeploymentId, Events});
+
+    if (!alreadyReported) {
+        Events.push({
+            Region: Events[0].Region,
+            State,
+            Type,
+            Timestamp: Date.now(),
+        });
+
+        await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
+        await setDeploymentDetails({DeploymentId, Events});
+    } else {
+        console.log('State "${State}" already reported for deployment ${DeploymentId}, skipping notification.');
+    }
 
     await codedeploy.putLifecycleEventHookExecutionStatus({
         deploymentId: DeploymentId,
