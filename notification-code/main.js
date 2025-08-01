@@ -61,7 +61,7 @@ const handleCodeDeployEvent = async (event) => {
             await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
             await setDeploymentDetails({DeploymentId, Events});
         } else {
-            console.log(`State "${State}" already reported for deployment ${DeploymentId}, skipping notification.`);
+            console.log('State "${State}" already reported for deployment ${DeploymentId}, skipping notification.');
         }
 
     }
@@ -134,7 +134,7 @@ const handleCodeDeployLifeCycleEvent = async (event) => {
         await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
         await setDeploymentDetails({DeploymentId, Events});
     } else {
-        console.log(`State "${State}" already reported for deployment ${DeploymentId}, skipping notification.`);
+        console.log('State "${State}" already reported for deployment ${DeploymentId}, skipping notification.');
     }
 
     await codedeploy.putLifecycleEventHookExecutionStatus({
