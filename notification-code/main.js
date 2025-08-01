@@ -40,8 +40,14 @@ const handleCodeDeployEvent = async (event) => {
                 break;
         }
 
+        const FIVE_MINUTES = 5 * 60 * 1000;
+        const now = Date.now();
+
         const alreadyReported = Events.some(
-            e => e.State === State && e.Type === Type
+        (e) =>
+            e.State === State &&
+            e.Type === Type &&
+            Math.abs(now - e.Timestamp) < FIVE_MINUTES
         );
 
         if (!alreadyReported) {
@@ -106,9 +112,16 @@ const handleCodeDeployLifeCycleEvent = async (event) => {
             break;
     }
 
+    const FIVE_MINUTES = 5 * 60 * 1000;
+    const now = Date.now();
+
     const alreadyReported = Events.some(
-        e => e.State === State && e.Type === Type
+    (e) =>
+        e.State === State &&
+        e.Type === Type &&
+        Math.abs(now - e.Timestamp) < FIVE_MINUTES
     );
+
 
     if (!alreadyReported) {
         Events.push({
