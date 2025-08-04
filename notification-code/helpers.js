@@ -14,9 +14,10 @@ module.exports = {
     getDeploymentDetails: async (DeploymentId) => {
         const client = new DynamoDB.DocumentClient();
 
-        const {Item} = await client.get({
+        const { Item } = await client.get({
             TableName: process.env.DEPLOYMENT_TABLE,
-            Key: {DeploymentId},
+            Key: { DeploymentId },
+            ConsistentRead: true // ✅ ensures up-to-date data
         }).promise();
 
         return Item;
