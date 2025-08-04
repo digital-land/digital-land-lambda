@@ -5,26 +5,25 @@ const {getSlackBotToken, getDeploymentDetails, setDeploymentDetails, sendMessage
 const handleCodeDeployEvent = async (event) => {
     const slackBotToken = await getSlackBotToken();
 
-    for (let index in event.Records) {
-        const Record = event.Records[index];
-        const RecordMessage = JSON.parse(Record.Sns.Message);
-        let DeploymentId = RecordMessage.deploymentId;
+    for (const record of event.Records) {
+        const recordMessage = JSON.parse(record.Sns.Message);
+        let DeploymentId = recordMessage.deploymentId;
         let Type = 'deployment';
-        let Application = process.env.APPLICATION_NAME;
+        const Application = process.env.APPLICATION_NAME;
 
-        const isRollback = RecordMessage.hasOwnProperty('rollbackInformation') &&
-            Object.entries(JSON.parse(RecordMessage.rollbackInformation)).length;
+        const isRollback = recordMessage.hasOwnProperty('rollbackInformation') &&
+            Object.entries(JSON.parse(recordMessage.rollbackInformation)).length;
 
         if (isRollback) {
-            const RollbackInformation = JSON.parse(RecordMessage.rollbackInformation);
-            DeploymentId = RollbackInformation.RollbackTriggeringDeploymentId;
+            const rollbackInfo = JSON.parse(recordMessage.rollbackInformation);
+            DeploymentId = rollbackInfo.RollbackTriggeringDeploymentId;
             Type = 'rollback';
         }
 
         const DeploymentDetails = await getDeploymentDetails(DeploymentId);
-        const Events = DeploymentDetails ? DeploymentDetails.Events : [];
+        const Events = DeploymentDetails?.Events || [];
 
-        let State = RecordMessage.status.toLowerCase().replace('_', '');
+        let State = recordMessage.status.toLowerCase().replace('_', '');
 
         switch (State) {
             case 'created':
@@ -36,34 +35,29 @@ const handleCodeDeployEvent = async (event) => {
             case 'succeeded':
                 State = 'completed';
                 break;
-            default:
-                break;
         }
 
-        // ✅ Skip duplicate "started" state
-        // const alreadyRecorded = Events.some(e => e.State === State && e.Type === Type);
-        // if (alreadyRecorded) {
-        //     console.log('Skipping duplicate state: ${State} for deployment ${DeploymentId}');
-        //     return;
-        // }
-
-        if (State === 'started' && Events.some(e => e.State === 'started' && e.Type === Type)) {
-            console.log('Duplicate started state for ${DeploymentId}, skipping.');
+        // ✅ Avoid duplicate 'started' states
+        if (State === 'started' && Events.some(e => e.State === 'started')) {
+            console.log(`Skipping duplicate 'started' for ${DeploymentId}`);
             return;
         }
 
         Events.push({
-            Region: RecordMessage.region,
+            Region: recordMessage.region,
             State,
             Type,
             Timestamp: Date.now(),
         });
 
+        // ✅ Send/update Slack message
         await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
 
-        await setDeploymentDetails({DeploymentId, Events});
+        // ✅ Save updated events (including Slack metadata)
+        await setDeploymentDetails({ DeploymentId, Events });
     }
 };
+
 
 const handleCodeDeployLifeCycleEvent = async (event) => {
     const codedeploy = new CodeDeploy({apiVersion: '2014-10-06'});
