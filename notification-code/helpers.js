@@ -17,7 +17,7 @@ module.exports = {
         const { Item } = await client.get({
             TableName: process.env.DEPLOYMENT_TABLE,
             Key: { DeploymentId },
-            ConsistentRead: true // ✅ ensures up-to-date data
+            ConsistentRead: true
         }).promise();
 
         return Item;
@@ -32,7 +32,8 @@ module.exports = {
     sendMessage: async (slackBotToken, Application, DeploymentId, Events, Type) => {
         const slack = new WebClient(slackBotToken);
         // const LastEvent = Events[Events.length - 2];
-        const LastEvent = [...Events].reverse().find(e => e.SlackMessageId && e.SlackChannelId);
+        // const LastEvent = [...Events].reverse().find(e => e.SlackMessageId && e.SlackChannelId);
+        const ExistingSlackEvent = Events.find(e => e.SlackMessageId && e.SlackChannelId);
         const ThisEvent = Events[Events.length - 1];
 
         const TypeMessage = Type.charAt(0).toUpperCase() + Type.slice(1);
@@ -77,18 +78,18 @@ module.exports = {
             },
         });
 
-        if (LastEvent) {
+        if (ExistingSlackEvent) {
             await slack.chat.update({
                 text: EventMessage,
                 mrkdwn: EventMessageMarkdown,
                 blocks: MessageBlocks,
-                ts: LastEvent.SlackMessageId,
-                channel: LastEvent.SlackChannelId,
+                ts: ExistingSlackEvent.SlackMessageId,
+                channel: ExistingSlackEvent.SlackChannelId,
                 icon_emoji: ':rocket:',
                 username: 'DeployBot',
             });
-            ThisEvent.SlackMessageId = LastEvent.SlackMessageId;
-            ThisEvent.SlackChannelId = LastEvent.SlackChannelId;
+            ThisEvent.SlackMessageId = ExistingSlackEvent.SlackMessageId;
+            ThisEvent.SlackChannelId = ExistingSlackEvent.SlackChannelId;
         } else {
             const result = await slack.chat.postMessage({
                 text: EventMessage,
