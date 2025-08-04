@@ -77,11 +77,13 @@ module.exports = {
         });
 
          // 🔍 Debug Logging
-        console.log('Debug info');
-        console.log('DeploymentId:', DeploymentId);
-        console.log('LastEvent:', LastEvent);
-        console.log('SlackMessageId:', LastEvent?.SlackMessageId);
-        console.log('SlackChannelId:', LastEvent?.SlackChannelId);
+       console.log('[DEBUG] Slack message update context:', JSON.stringify({
+            DeploymentId,
+            LastEvent,
+            SlackMessageId: LastEvent?.SlackMessageId,
+            SlackChannelId: LastEvent?.SlackChannelId
+        }, null, 2));
+
 
         // if (LastEvent) {
         if (LastEvent && LastEvent.SlackMessageId && LastEvent.SlackChannelId) {
