@@ -41,11 +41,11 @@ const handleCodeDeployEvent = async (event) => {
         }
 
         // ✅ Skip duplicate "started" state
-        const alreadyRecorded = Events.some(e => e.State === State && e.Type === Type);
-        if (alreadyRecorded) {
-            console.log('Skipping duplicate state: ${State} for deployment ${DeploymentId}');
-            return;
-        }
+        // const alreadyRecorded = Events.some(e => e.State === State && e.Type === Type);
+        // if (alreadyRecorded) {
+        //     console.log('Skipping duplicate state: ${State} for deployment ${DeploymentId}');
+        //     return;
+        // }
 
         Events.push({
             Region: RecordMessage.region,
@@ -105,11 +105,11 @@ const handleCodeDeployLifeCycleEvent = async (event) => {
             break;
     }
 
-    const alreadyRecorded = Events.some(e => e.State === State && e.Type === Type);
-    if (alreadyRecorded) {
-        console.log('Skipping duplicate state: ${State} for deployment ${DeploymentId}');
-        return;
-    }
+    // const alreadyRecorded = Events.some(e => e.State === State && e.Type === Type);
+    // if (alreadyRecorded) {
+    //     console.log('Skipping duplicate state: ${State} for deployment ${DeploymentId}');
+    //     return;
+    // }
 
     Events.push({
         Region: Events[0].Region,
