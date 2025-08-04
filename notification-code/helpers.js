@@ -30,7 +30,8 @@ module.exports = {
     },
     sendMessage: async (slackBotToken, Application, DeploymentId, Events, Type) => {
         const slack = new WebClient(slackBotToken);
-        const LastEvent = Events[Events.length - 2];
+        // const LastEvent = Events[Events.length - 2];
+        const LastEvent = [...Events].reverse().find(e => e.SlackMessageId && e.SlackChannelId);
         const ThisEvent = Events[Events.length - 1];
 
         const TypeMessage = Type.charAt(0).toUpperCase() + Type.slice(1);
