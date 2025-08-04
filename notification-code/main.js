@@ -60,36 +60,44 @@ const handleCodeDeployEvent = async (event) => {
 
 
 const handleCodeDeployLifeCycleEvent = async (event) => {
-    const codedeploy = new CodeDeploy({apiVersion: '2014-10-06'});
+    const codedeploy = new CodeDeploy({ apiVersion: '2014-10-06' });
     const slackBotToken = await getSlackBotToken();
+
     const DeploymentId = event.DeploymentId;
     const lifecycleEventHookExecutionId = event.LifecycleEventHookExecutionId;
+    const Application = process.env.APPLICATION_NAME;
+    const Type = 'deployment'; // or 'lifecycle' if you want to differentiate
 
+    // ✅ Get latest deployment state (strongly consistent)
+    const DeploymentDetails = await getDeploymentDetails(DeploymentId);
+    const Events = DeploymentDetails?.Events || [];
+
+    // ✅ Get ECS target ID
     const deploymentTargets = await codedeploy.listDeploymentTargets({
         deploymentId: DeploymentId,
     }).promise();
 
-    console.log(JSON.stringify(deploymentTargets));
+    const targetId = deploymentTargets.targetIds[0];
+    if (!targetId) {
+        console.warn(`No target found for deployment ${DeploymentId}`);
+        return;
+    }
 
     const deploymentTarget = await codedeploy.getDeploymentTarget({
         deploymentId: DeploymentId,
-        targetId: deploymentTargets.targetIds[0],
+        targetId: targetId,
     }).promise();
 
-    console.log(JSON.stringify(deploymentTarget));
+    const lifecycleEvents = deploymentTarget?.deploymentTarget?.ecsTarget?.lifecycleEvents || [];
 
-    let Type = 'deployment';
-    let Application = process.env.APPLICATION_NAME;
+    const lastSucceeded = [...lifecycleEvents].reverse().find(e => e.status === 'Succeeded');
+    if (!lastSucceeded) {
+        console.warn(`No successful lifecycle event yet for ${DeploymentId}`);
+        return;
+    }
 
-    const DeploymentDetails = await getDeploymentDetails(DeploymentId);
-    const Events = DeploymentDetails ? DeploymentDetails.Events : [];
-
-    const lastSuccessEvent = deploymentTarget.deploymentTarget.ecsTarget.lifecycleEvents
-        .reverse()
-        .find(e => e.status === 'Succeeded');
-
-    let State = lastSuccessEvent.lifecycleEventName;
-
+    // ✅ Map lifecycle event to readable state
+    let State = lastSucceeded.lifecycleEventName;
     switch (State) {
         case 'Install':
             State = 'replacement service running';
@@ -100,32 +108,29 @@ const handleCodeDeployLifeCycleEvent = async (event) => {
         case 'AllowTraffic':
             State = 'replacement service accepting 100% traffic';
             break;
-        default:
-            break;
     }
 
-    // const alreadyRecorded = Events.some(e => e.State === State && e.Type === Type);
-    // if (alreadyRecorded) {
-    //     console.log('Skipping duplicate state: ${State} for deployment ${DeploymentId}');
-    //     return;
-    // }
-
-    if (State === 'started' && Events.some(e => e.State === 'started' && e.Type === Type)) {
-        console.log('Duplicate started state for ${DeploymentId}, skipping.');
+    // ✅ Deduplicate state
+    const alreadyLogged = Events.some(e => e.State === State && e.Type === Type);
+    if (alreadyLogged) {
+        console.log(`State '${State}' already logged for ${DeploymentId}, skipping.`);
         return;
     }
 
     Events.push({
-        Region: Events[0].Region,
+        Region: process.env.AWS_REGION || 'us-east-1', // fallback if not included
         State,
         Type,
         Timestamp: Date.now(),
     });
 
+    // ✅ Send/update Slack message
     await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
 
-    await setDeploymentDetails({DeploymentId, Events});
+    // ✅ Save updated event list (including Slack metadata)
+    await setDeploymentDetails({ DeploymentId, Events });
 
+    // ✅ Notify CodeDeploy that the hook succeeded
     await codedeploy.putLifecycleEventHookExecutionStatus({
         deploymentId: DeploymentId,
         lifecycleEventHookExecutionId,
