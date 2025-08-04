@@ -133,11 +133,18 @@ module.exports = {
     handler: async (event, context) => {
         console.log(JSON.stringify(event))
 
-        if (event.Records?.[0]?.hasOwnProperty('Sns')) {
-            await handleCodeDeployEvent(event, context);
-        }
+        // if (event.Records?.[0]?.hasOwnProperty('Sns')) {
+        //     await handleCodeDeployEvent(event, context);
+        // }
+        // if (event.hasOwnProperty('LifecycleEventHookExecutionId')) {
+        //     await handleCodeDeployLifeCycleEvent(event, context);
+        // }
         if (event.hasOwnProperty('LifecycleEventHookExecutionId')) {
             await handleCodeDeployLifeCycleEvent(event, context);
+        } else if (event.Records?.[0]?.hasOwnProperty('Sns')) {
+            await handleCodeDeployEvent(event, context);
+        } else {
+            console.warn('Unknown event format received. Skipping.');
         }
     }
 }
