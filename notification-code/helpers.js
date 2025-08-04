@@ -30,7 +30,8 @@ module.exports = {
     },
     sendMessage: async (slackBotToken, Application, DeploymentId, Events, Type) => {
         const slack = new WebClient(slackBotToken);
-        const LastEvent = Events[Events.length - 2];
+        // const LastEvent = Events[Events.length - 2];
+        const LastEvent = Events.length >= 2 ? Events[Events.length - 2] : null;
         const ThisEvent = Events[Events.length - 1];
 
         const TypeMessage = Type.charAt(0).toUpperCase() + Type.slice(1);
@@ -75,7 +76,15 @@ module.exports = {
             },
         });
 
-        if (LastEvent) {
+         // 🔍 Debug Logging
+        console.log('Debug info');
+        console.log('DeploymentId:', DeploymentId);
+        console.log('LastEvent:', LastEvent);
+        console.log('SlackMessageId:', LastEvent?.SlackMessageId);
+        console.log('SlackChannelId:', LastEvent?.SlackChannelId);
+
+        // if (LastEvent) {
+        if (LastEvent && LastEvent.SlackMessageId && LastEvent.SlackChannelId) {
             await slack.chat.update({
                 text: EventMessage,
                 mrkdwn: EventMessageMarkdown,
