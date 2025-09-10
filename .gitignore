@@ -45,3 +45,5 @@ coverage.xml
 .secrets
 
 *.zip
+
+data
