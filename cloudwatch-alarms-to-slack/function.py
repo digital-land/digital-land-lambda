@@ -92,7 +92,7 @@ def resolve_alarm(alarm: dict) -> dict:
 
 
 def _get_slack_token() -> str:
-  # Prefer direct env var, else read via SSM using PARAM_SLACK_BOT_TOKEN
+  # get direct env var, else read via SSM using PARAM_SLACK_BOT_TOKEN
   token = os.environ.get("SLACK_BOT_TOKEN")
   if token:
     return token
@@ -106,20 +106,9 @@ def _get_slack_token() -> str:
   return resp["Parameter"]["Value"]
 
 
-def _resolve_channel_id(token: str, channel: str) -> str:
-  """
-  Minimal resolver to avoid NameError.
-  If you pass a channel ID (recommended), this returns it unchanged.
-  If you pass a name, Slack may return channel_not_found unless the bot has
-  the right scopes and is a member. Prefer channel IDs for reliability.
-  """
-  return channel
-
-
 def _post_to_slack(channel: str, blocks: list):
   token = _get_slack_token()
-  channel_id = _resolve_channel_id(token, channel)
-  payload = {"channel": channel_id, "blocks": blocks, "text": "CloudWatch Alarm"}
+  payload = {"channel": channel, "blocks": blocks, "text": "CloudWatch Alarm"}
   headers = {
       "Authorization": f"Bearer {token}",
       "Content-Type": "application/json; charset=utf-8",
@@ -163,7 +152,7 @@ def lambda_handler(event, context):
         ]
     }
 
-  # This is default channel just a safety net
+  # This is default channel just as a safety net
   channel = os.environ.get("SLACK_CHANNEL", "planning-data-alerts")
   try:
     print({
