@@ -1,160 +1,165 @@
-import urllib3
+import os
 import json
 import boto3
+import urllib3
+
 
 http = urllib3.PoolManager()
 
 
-def get_alarm_attributes(sns_message):
-    alarm = dict()
-
-    alarm['name'] = sns_message['AlarmName']
-    alarm['description'] = sns_message['AlarmDescription']
-    alarm['reason'] = sns_message['NewStateReason']
-    alarm['region'] = sns_message['Region']
-    alarm['state'] = sns_message['NewStateValue']
-    alarm['previous_state'] = sns_message['OldStateValue']
-
-    return alarm
-
-
-def register_alarm(alarm):
-    return {
-        "type": "home",
-        "blocks": [
-            {
-                "type": "header",
-                "text": {
-                    "type": "plain_text",
-                    "text": ":warning: " + alarm['name'] + " alarm was registered"
-                }
-            },
-            {
-                "type": "divider"
-            },
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": "_" + alarm['description'] + "_"
-                },
-                "block_id": "text1"
-            },
-            {
-                "type": "divider"
-            },
-            {
-                "type": "context",
-                "elements": [
-                    {
-                        "type": "mrkdwn",
-                        "text": "Region: *" + alarm['region'] + "*"
-                    }
-                ]
-            }
-        ]
-    }
+def get_alarm_attributes(sns_message: dict) -> dict:
+  alarm = {
+      "name": sns_message.get("AlarmName", "Unknown Alarm"),
+      "description": sns_message.get("AlarmDescription", ""),
+      "reason": sns_message.get("NewStateReason", ""),
+      "region": sns_message.get("Region", ""),
+      "state": sns_message.get("NewStateValue", ""),
+      "previous_state": sns_message.get("OldStateValue", ""),
+  }
+  return alarm
 
 
-def activate_alarm(alarm):
-    return {
-        "type": "home",
-        "blocks": [
-            {
-                "type": "header",
-                "text": {
-                    "type": "plain_text",
-                    "text": ":red_circle: Alarm: " + alarm['name'],
-                }
-            },
-            {
-                "type": "divider"
-            },
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": "_" + alarm['reason'] + "_"
-                },
-                "block_id": "text1"
-            },
-            {
-                "type": "divider"
-            },
-            {
-                "type": "context",
-                "elements": [
-                    {
-                        "type": "mrkdwn",
-                        "text": "Region: *" + alarm['region'] + "*"
-                    }
-                ]
-            }
-        ]
-    }
+def register_alarm(alarm: dict) -> dict:
+  return {
+      "blocks": [
+          {
+              "type": "header",
+              "text": {"type": "plain_text", "text": ":warning: " + alarm["name"] + " alarm was registered"},
+          },
+          {"type": "divider"},
+          {
+              "type": "section",
+              "text": {"type": "mrkdwn", "text": "_" + alarm["description"] + "_"},
+              "block_id": "text1",
+          },
+          {"type": "divider"},
+          {
+              "type": "context",
+              "elements": [
+                  {"type": "mrkdwn", "text": "Region: *" + alarm["region"] + "*"}
+              ],
+          },
+      ]
+  }
 
 
-def resolve_alarm(alarm):
-    return {
-        "type": "home",
-        "blocks": [
-            {
-                "type": "header",
-                "text": {
-                    "type": "plain_text",
-                    "text": ":large_green_circle: Alarm: " + alarm['name'] + " was resolved",
-                }
-            },
-            {
-                "type": "divider"
-            },
-            {
-                "type": "section",
-                "text": {
-                    "type": "mrkdwn",
-                    "text": "_" + alarm['reason'] + "_"
-                },
-                "block_id": "text1"
-            },
-            {
-                "type": "divider"
-            },
-            {
-                "type": "context",
-                "elements": [
-                    {
-                        "type": "mrkdwn",
-                        "text": "Region: *" + alarm['region'] + "*"
-                    }
-                ]
-            }
-        ]
-    }
+def activate_alarm(alarm: dict) -> dict:
+  return {
+      "blocks": [
+          {
+              "type": "header",
+              "text": {"type": "plain_text", "text": ":red_circle: Alarm: " + alarm["name"]},
+          },
+          {"type": "divider"},
+          {
+              "type": "section",
+              "text": {"type": "mrkdwn", "text": "_" + alarm["reason"] + "_"},
+              "block_id": "text1",
+          },
+          {"type": "divider"},
+          {
+              "type": "context",
+              "elements": [
+                  {"type": "mrkdwn", "text": "Region: *" + alarm["region"] + "*"}
+              ],
+          },
+      ]
+  }
+
+
+def resolve_alarm(alarm: dict) -> dict:
+  return {
+      "blocks": [
+          {
+              "type": "header",
+              "text": {"type": "plain_text", "text": ":large_green_circle: Alarm: " + alarm["name"] + " was resolved"},
+          },
+          {"type": "divider"},
+          {
+              "type": "section",
+              "text": {"type": "mrkdwn", "text": "_" + alarm["reason"] + "_"},
+              "block_id": "text1",
+          },
+          {"type": "divider"},
+          {
+              "type": "context",
+              "elements": [
+                  {"type": "mrkdwn", "text": "Region: *" + alarm["region"] + "*"}
+              ],
+          },
+      ]
+  }
+
+
+def _get_slack_token() -> str:
+  # get direct env var, else read via SSM using PARAM_SLACK_BOT_TOKEN
+  token = os.environ.get("SLACK_BOT_TOKEN")
+  if token:
+    return token
+
+  param_name = os.environ.get("PARAM_SLACK_BOT_TOKEN")
+  if not param_name:
+    raise RuntimeError("No SLACK_BOT_TOKEN or PARAM_SLACK_BOT_TOKEN set")
+
+  ssm = boto3.client("ssm")
+  resp = ssm.get_parameter(Name=param_name, WithDecryption=True)
+  return resp["Parameter"]["Value"]
+
+
+def _post_to_slack(channel: str, blocks: list):
+  token = _get_slack_token()
+  payload = {"channel": channel, "blocks": blocks, "text": "CloudWatch Alarm"}
+  headers = {
+      "Authorization": f"Bearer {token}",
+      "Content-Type": "application/json; charset=utf-8",
+  }
+  resp = http.request(
+      "POST",
+      "https://slack.com/api/chat.postMessage",
+      body=json.dumps(payload).encode("utf-8"),
+      headers=headers,
+  )
+
+  try:
+    body = json.loads(resp.data.decode("utf-8"))
+  except Exception:
+    body = {}
+
+  if resp.status != 200 or not body.get("ok", False):
+    raise Exception(f"Slack API error status={resp.status} body={body} channel={channel}")
 
 
 def lambda_handler(event, context):
-    ssm = boto3.client('ssm')
-    response = ssm.get_parameter(
-        Name='slack-planning-data-alarms-webhook-url', WithDecryption=True)
-    slack_url = response['Parameter']['Value']
-    sns_message = json.loads(event["Records"][0]["Sns"]["Message"])
-    alarm = get_alarm_attributes(sns_message)
+  sns_message = json.loads(event["Records"][0]["Sns"]["Message"]) if isinstance(event, dict) else {}
+  alarm = get_alarm_attributes(sns_message)
 
-    msg = str()
+  if alarm["previous_state"] == "INSUFFICIENT_DATA" and alarm["state"] == "OK":
+    msg = register_alarm(alarm)
+  elif alarm["previous_state"] == "OK" and alarm["state"] == "ALARM":
+    msg = activate_alarm(alarm)
+  elif alarm["previous_state"] == "ALARM" and alarm["state"] == "OK":
+    msg = resolve_alarm(alarm)
+  else:
+    msg = {
+        "blocks": [
+            {
+                "type": "section",
+                "text": {
+                    "type": "mrkdwn",
+                    "text": f"Alarm {alarm['name']} changed: {alarm['previous_state']} -> {alarm['state']}",
+                },
+            }
+        ]
+    }
 
-    if alarm['previous_state'] == "INSUFFICIENT_DATA" and alarm['state'] == 'OK':
-        msg = register_alarm(alarm)
-    elif alarm['previous_state'] == 'OK' and alarm['state'] == 'ALARM':
-        msg = activate_alarm(alarm)
-    elif alarm['previous_state'] == 'ALARM' and alarm['state'] == 'OK':
-        msg = resolve_alarm(alarm)
-
-    encoded_msg = json.dumps(msg).encode("utf-8")
-    resp = http.request("POST", slack_url, body=encoded_msg)
-    print(
-        {
-            "message": msg,
-            "status_code": resp.status,
-            "response": resp.data,
-        }
-    )
+  # This is default channel just as a safety net
+  channel = os.environ.get("SLACK_CHANNEL", "planning-data-alerts")
+  try:
+    print({
+        "debug": "env_channel",
+        "channel_value": channel,
+    })
+  except Exception:
+    pass
+  _post_to_slack(channel=channel, blocks=msg["blocks"])
+  return {"statusCode": 200}
