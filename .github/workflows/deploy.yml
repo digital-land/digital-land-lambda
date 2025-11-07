@@ -119,3 +119,4 @@ jobs:
           aws lambda update-function-code --function-name ${{ matrix.environment }}-collection-data-logs-process --zip-file fileb://./process-log.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-data-design-cdn-logs-process --zip-file fileb://./process-log.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-dataset-editor-cdn-logs-process --zip-file fileb://./process-log.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-download-lambda-cdn-logs-process --zip-file fileb://./process-log.zip
