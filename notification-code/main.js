@@ -5,26 +5,25 @@ const {getSlackBotToken, getDeploymentDetails, setDeploymentDetails, sendMessage
 const handleCodeDeployEvent = async (event) => {
     const slackBotToken = await getSlackBotToken();
 
-    for (let index in event.Records) {
-        const Record = event.Records[index];
-        const RecordMessage = JSON.parse(Record.Sns.Message);
-        let DeploymentId = RecordMessage.deploymentId;
+    for (const record of event.Records) {
+        const recordMessage = JSON.parse(record.Sns.Message);
+        let DeploymentId = recordMessage.deploymentId;
         let Type = 'deployment';
-        let Application = process.env.APPLICATION_NAME;
+        const Application = process.env.APPLICATION_NAME;
 
-        const isRollback = RecordMessage.hasOwnProperty('rollbackInformation') &&
-            Object.entries(JSON.parse(RecordMessage.rollbackInformation)).length;
+        const isRollback = recordMessage.hasOwnProperty('rollbackInformation') &&
+            Object.entries(JSON.parse(recordMessage.rollbackInformation)).length;
 
         if (isRollback) {
-            const RollbackInformation = JSON.parse(RecordMessage.rollbackInformation);
-            DeploymentId = RollbackInformation.RollbackTriggeringDeploymentId;
+            const rollbackInfo = JSON.parse(recordMessage.rollbackInformation);
+            DeploymentId = rollbackInfo.RollbackTriggeringDeploymentId;
             Type = 'rollback';
         }
 
         const DeploymentDetails = await getDeploymentDetails(DeploymentId);
-        const Events = DeploymentDetails ? DeploymentDetails.Events : [];
+        const Events = DeploymentDetails?.Events || [];
 
-        let State = RecordMessage.status.toLowerCase().replace('_', '');
+        let State = recordMessage.status.toLowerCase().replace('_', '');
 
         switch (State) {
             case 'created':
@@ -36,54 +35,69 @@ const handleCodeDeployEvent = async (event) => {
             case 'succeeded':
                 State = 'completed';
                 break;
-            default:
-                break;
+        }
+
+        // ✅ Avoid duplicate 'started' states
+        if (State === 'started' && Events.some(e => e.State === 'started')) {
+            console.log(`Skipping duplicate 'started' for ${DeploymentId}`);
+            return;
         }
 
         Events.push({
-            Region: RecordMessage.region,
+            Region: recordMessage.region,
             State,
             Type,
             Timestamp: Date.now(),
         });
 
+        // ✅ Send/update Slack message
         await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
 
-        await setDeploymentDetails({DeploymentId, Events});
+        // ✅ Save updated events (including Slack metadata)
+        await setDeploymentDetails({ DeploymentId, Events });
     }
 };
 
+
 const handleCodeDeployLifeCycleEvent = async (event) => {
-    const codedeploy = new CodeDeploy({apiVersion: '2014-10-06'});
+    const codedeploy = new CodeDeploy({ apiVersion: '2014-10-06' });
     const slackBotToken = await getSlackBotToken();
+
     const DeploymentId = event.DeploymentId;
     const lifecycleEventHookExecutionId = event.LifecycleEventHookExecutionId;
+    const Application = process.env.APPLICATION_NAME;
+    const Type = 'deployment'; // or 'lifecycle' if you want to differentiate
 
+    // ✅ Get latest deployment state (strongly consistent)
+    const DeploymentDetails = await getDeploymentDetails(DeploymentId);
+    const Events = DeploymentDetails?.Events || [];
+
+    // ✅ Get ECS target ID
     const deploymentTargets = await codedeploy.listDeploymentTargets({
         deploymentId: DeploymentId,
     }).promise();
 
-    console.log(JSON.stringify(deploymentTargets));
+    const targetId = deploymentTargets.targetIds[0];
+    if (!targetId) {
+        console.warn(`No target found for deployment ${DeploymentId}`);
+        return;
+    }
 
     const deploymentTarget = await codedeploy.getDeploymentTarget({
         deploymentId: DeploymentId,
-        targetId: deploymentTargets.targetIds[0],
+        targetId: targetId,
     }).promise();
 
-    console.log(JSON.stringify(deploymentTarget));
+    const lifecycleEvents = deploymentTarget?.deploymentTarget?.ecsTarget?.lifecycleEvents || [];
 
-    let Type = 'deployment';
-    let Application = process.env.APPLICATION_NAME;
+    const lastSucceeded = [...lifecycleEvents].reverse().find(e => e.status === 'Succeeded');
+    if (!lastSucceeded) {
+        console.warn(`No successful lifecycle event yet for ${DeploymentId}`);
+        return;
+    }
 
-    const DeploymentDetails = await getDeploymentDetails(DeploymentId);
-    const Events = DeploymentDetails ? DeploymentDetails.Events : [];
-
-    const lastSuccessEvent = deploymentTarget.deploymentTarget.ecsTarget.lifecycleEvents
-        .reverse()
-        .find(e => e.status === 'Succeeded');
-
-    let State = lastSuccessEvent.lifecycleEventName;
-
+    // ✅ Map lifecycle event to readable state
+    let State = lastSucceeded.lifecycleEventName;
     switch (State) {
         case 'Install':
             State = 'replacement service running';
@@ -94,21 +108,29 @@ const handleCodeDeployLifeCycleEvent = async (event) => {
         case 'AllowTraffic':
             State = 'replacement service accepting 100% traffic';
             break;
-        default:
-            break;
+    }
+
+    // ✅ Deduplicate state
+    const alreadyLogged = Events.some(e => e.State === State && e.Type === Type);
+    if (alreadyLogged) {
+        console.log(`State '${State}' already logged for ${DeploymentId}, skipping.`);
+        return;
     }
 
     Events.push({
-        Region: Events[0].Region,
+        Region: process.env.AWS_REGION || 'us-east-1', // fallback if not included
         State,
         Type,
         Timestamp: Date.now(),
     });
 
+    // ✅ Send/update Slack message
     await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
 
-    await setDeploymentDetails({DeploymentId, Events});
+    // ✅ Save updated event list (including Slack metadata)
+    await setDeploymentDetails({ DeploymentId, Events });
 
+    // ✅ Notify CodeDeploy that the hook succeeded
     await codedeploy.putLifecycleEventHookExecutionStatus({
         deploymentId: DeploymentId,
         lifecycleEventHookExecutionId,
@@ -120,11 +142,18 @@ module.exports = {
     handler: async (event, context) => {
         console.log(JSON.stringify(event))
 
-        if (event.Records?.[0]?.hasOwnProperty('Sns')) {
-            await handleCodeDeployEvent(event, context);
-        }
+        // if (event.Records?.[0]?.hasOwnProperty('Sns')) {
+        //     await handleCodeDeployEvent(event, context);
+        // }
+        // if (event.hasOwnProperty('LifecycleEventHookExecutionId')) {
+        //     await handleCodeDeployLifeCycleEvent(event, context);
+        // }
         if (event.hasOwnProperty('LifecycleEventHookExecutionId')) {
             await handleCodeDeployLifeCycleEvent(event, context);
+        } else if (event.Records?.[0]?.hasOwnProperty('Sns')) {
+            await handleCodeDeployEvent(event, context);
+        } else {
+            console.warn('Unknown event format received. Skipping.');
         }
     }
 }
