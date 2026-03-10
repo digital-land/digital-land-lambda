@@ -83,7 +83,11 @@ const handleCodeDeployLifeCycleEvent = async (event) => {
 
             // Only fail the deployment when CodeDeploy reports an actual failed lifecycle event.
             if (latestLifecycleEvent?.status === 'Failed') {
-                throw new Error(`Lifecycle event ${latestLifecycleEvent.lifecycleEventName} failed for deployment ${DeploymentId}`);
+                const lifecycleFailure = new Error(
+                    `Lifecycle event ${latestLifecycleEvent.lifecycleEventName} failed for deployment ${DeploymentId}`
+                );
+                lifecycleFailure.isLifecycleValidationFailure = true;
+                throw lifecycleFailure;
             }
 
             let Type = 'deployment';
@@ -123,15 +127,24 @@ const handleCodeDeployLifeCycleEvent = async (event) => {
         }
 
     } catch (err) {
-        console.error(err);
-        hookStatus = 'Failed';
-        failureError = err;
+        if (err.isLifecycleValidationFailure) {
+            console.error(err);
+            hookStatus = 'Failed';
+            failureError = err;
+        } else {
+            console.error('Non-blocking lifecycle hook error', err);
+        }
     } finally {
-        await codedeploy.putLifecycleEventHookExecutionStatus({
-            deploymentId: DeploymentId,
-            lifecycleEventHookExecutionId,
-            status: hookStatus,
-        }).promise();
+        try {
+            await codedeploy.putLifecycleEventHookExecutionStatus({
+                deploymentId: DeploymentId,
+                lifecycleEventHookExecutionId,
+                status: hookStatus,
+            }).promise();
+        } catch (statusError) {
+            console.error('Failed to report lifecycle hook execution status', statusError);
+            throw statusError;
+        }
     }
 
     if (failureError) {
