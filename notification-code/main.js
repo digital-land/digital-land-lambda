@@ -58,6 +58,9 @@ const handleCodeDeployLifeCycleEvent = async (event) => {
     const slackBotToken = await getSlackBotToken();
     const DeploymentId = event.DeploymentId;
     const lifecycleEventHookExecutionId = event.LifecycleEventHookExecutionId;
+    let hookStatus = 'Succeeded';
+    let failureError = null;
+
     try {
         const deploymentTargets = await codedeploy.listDeploymentTargets({
             deploymentId: DeploymentId,
@@ -65,63 +68,74 @@ const handleCodeDeployLifeCycleEvent = async (event) => {
 
         console.log(JSON.stringify(deploymentTargets));
 
-        const deploymentTarget = await codedeploy.getDeploymentTarget({
-            deploymentId: DeploymentId,
-            targetId: deploymentTargets.targetIds[0],
-        }).promise();
+        if (!deploymentTargets.targetIds?.length) {
+            console.warn(`No deployment targets found for deployment ${DeploymentId}. Skipping notification update.`);
+        } else {
+            const deploymentTarget = await codedeploy.getDeploymentTarget({
+                deploymentId: DeploymentId,
+                targetId: deploymentTargets.targetIds[0],
+            }).promise();
 
-        console.log(JSON.stringify(deploymentTarget));
+            console.log(JSON.stringify(deploymentTarget));
 
-        let Type = 'deployment';
-        let Application = process.env.APPLICATION_NAME;
+            const lifecycleEvents = deploymentTarget.deploymentTarget?.ecsTarget?.lifecycleEvents || [];
+            const latestLifecycleEvent = lifecycleEvents[lifecycleEvents.length - 1];
 
-        const DeploymentDetails = await getDeploymentDetails(DeploymentId);
-        const Events = DeploymentDetails ? DeploymentDetails.Events : [];
+            // Only fail the deployment when CodeDeploy reports an actual failed lifecycle event.
+            if (latestLifecycleEvent?.status === 'Failed') {
+                throw new Error(`Lifecycle event ${latestLifecycleEvent.lifecycleEventName} failed for deployment ${DeploymentId}`);
+            }
 
-        const lastSuccessEvent = deploymentTarget.deploymentTarget.ecsTarget.lifecycleEvents
-            .reverse()
-            .find(e => e.status === 'Succeeded');
+            let Type = 'deployment';
+            let Application = process.env.APPLICATION_NAME;
+            const DeploymentDetails = await getDeploymentDetails(DeploymentId);
+            const Events = DeploymentDetails ? DeploymentDetails.Events : [];
+            const lastSuccessEvent = [...lifecycleEvents].reverse().find(e => e.status === 'Succeeded');
+            let State = lastSuccessEvent?.lifecycleEventName || latestLifecycleEvent?.lifecycleEventName || 'in progress';
 
-        let State = lastSuccessEvent.lifecycleEventName;
+            switch (State) {
+                case 'Install':
+                    State = 'replacement service running';
+                    break;
+                case 'AfterInstall':
+                    State = 'replacement service accepting 20% traffic';
+                    break;
+                case 'AllowTraffic':
+                    State = 'replacement service accepting 100% traffic';
+                    break;
+                default:
+                    break;
+            }
 
-        switch (State) {
-            case 'Install':
-                State = 'replacement service running';
-                break;
-            case 'AfterInstall':
-                State = 'replacement service accepting 20% traffic';
-                break;
-            case 'AllowTraffic':
-                State = 'replacement service accepting 100% traffic';
-                break;
-            default:
-                break;
+            Events.push({
+                Region: Events[0]?.Region || process.env.AWS_REGION,
+                State,
+                Type,
+                Timestamp: Date.now(),
+            });
+
+            try {
+                await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
+                await setDeploymentDetails({DeploymentId, Events});
+            } catch (notificationError) {
+                console.error('Non-blocking lifecycle notification error', notificationError);
+            }
         }
 
-        Events.push({
-            Region: Events[0].Region,
-            State,
-            Type,
-            Timestamp: Date.now(),
-        });
-
-        await sendMessage(slackBotToken, Application, DeploymentId, Events, Type);
-
-        await setDeploymentDetails({DeploymentId, Events});
-
-        await codedeploy.putLifecycleEventHookExecutionStatus({
-            deploymentId: DeploymentId,
-            lifecycleEventHookExecutionId,
-            status: 'Succeeded',
-        }).promise();
     } catch (err) {
         console.error(err);
+        hookStatus = 'Failed';
+        failureError = err;
+    } finally {
         await codedeploy.putLifecycleEventHookExecutionStatus({
             deploymentId: DeploymentId,
             lifecycleEventHookExecutionId,
-            status: 'Failed',
+            status: hookStatus,
         }).promise();
-        throw err;
+    }
+
+    if (failureError) {
+        throw failureError;
     }
 };
 
