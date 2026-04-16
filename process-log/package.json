@@ -9,6 +9,7 @@
     "aws-sdk": "^2.1225.0"
   },
   "devDependencies": {
-    "aws-sdk-mock": "^5.7.0"
+    "aws-sdk-mock": "^5.7.0",
+    "jest": "^29.7.0"
   }
 }

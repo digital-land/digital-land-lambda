@@ -4,28 +4,80 @@ const util = require('util');
 
 const gunzip = util.promisify(zlib.gunzip);
 
+const toLogEvent = (line) => {
+    let timestamp = null;
+
+    if (line.timestamp !== undefined && line.timestamp !== null) {
+        const numericTimestamp = Number(line.timestamp);
+        if (Number.isFinite(numericTimestamp)) {
+            timestamp = numericTimestamp;
+        } else {
+            const parsedTimestamp = Date.parse(line.timestamp);
+            if (!Number.isNaN(parsedTimestamp)) {
+                timestamp = parsedTimestamp;
+            }
+        }
+    }
+
+    if ((timestamp === null || !Number.isFinite(timestamp)) && line.date && line.time) {
+        const parsedTimestamp = Date.parse(`${line.date}T${line.time}Z`);
+        if (!Number.isNaN(parsedTimestamp)) {
+            timestamp = parsedTimestamp;
+        }
+    }
+
+    if (timestamp === null || !Number.isFinite(timestamp)) {
+        timestamp = Date.now();
+    }
+
+    return {timestamp, message: JSON.stringify(line)};
+};
+
+const parseLegacyCloudFrontLogs = (content, fieldsLine) => {
+    const fields = fieldsLine
+        .replace('#Fields: ', '')
+        .split(' ');
+
+    return content
+        .split('\n')
+        .filter(line => !line.startsWith('#'))
+        .filter(line => !!line)
+        .map((line) => Object.fromEntries(line.split('\t').map((column, index) => ([fields[index], column]))))
+        .map(toLogEvent);
+};
+
+const parseJsonCloudFrontLogs = (content) => {
+    return content
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => !!line)
+        .filter(line => !line.startsWith('#'))
+        .map((line) => {
+            try {
+                return JSON.parse(line);
+            } catch (err) {
+                console.error('Failed to parse JSON CloudFront log line', err);
+                return null;
+            }
+        })
+        .filter(line => line !== null)
+        .map(toLogEvent);
+};
+
 const getLogEvents = async (s3, Bucket, Key) => {
     try {
         const s3Object = await s3.getObject({Bucket, Key}).promise();
         const log = await gunzip(s3Object.Body);
-
-        const fields = log.toString()
+        const content = log.toString();
+        const fieldsLine = content
             .split('\n')
-            .find(line => line.startsWith('#Fields:'))
-            .replace('#Fields: ', '')
-            .split(' ');
+            .find(line => line.startsWith('#Fields:'));
 
-        return log.toString()
-            .split('\n')
-            .filter(line => !line.startsWith('#'))
-            .filter(line => !!line)
-            .map((line) => Object.fromEntries(line.split('\t').map((column, index) => ([fields[index], column]))))
-            .map(line => {
-                const date = line.date.split('-').map(d => parseInt(d));
-                const time = line.time.split(':').map(d => parseInt(d));
-                const timestamp = new Date(date[0], date[1] - 1, date[2], time[0], time[1], time[2]).getTime();
-                return {timestamp, message: JSON.stringify(line)};
-            });
+        if (fieldsLine) {
+            return parseLegacyCloudFrontLogs(content, fieldsLine);
+        }
+
+        return parseJsonCloudFrontLogs(content);
     } catch (err) {
         console.error(err);
         return [];
