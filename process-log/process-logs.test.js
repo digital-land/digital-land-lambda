@@ -23,6 +23,17 @@ const testEvent = {
     ]
 };
 
+const testJsonEvent = {
+    Records: [
+        {
+            s3: {
+                bucket: {name: "test-s3-bucket", arn: "arn:aws:s3:::test-s3-bucket"},
+                object: {key: "json.log"}
+            }
+        }
+    ]
+};
+
 const testLogFileOne = "#Version: 1.0\n" +
     "#Fields: date time x-edge-location sc-bytes c-ip cs-method cs(Host) cs-uri-stem sc-status cs(Referer) cs(User-Agent) cs-uri-query cs(Cookie) x-edge-result-type x-edge-request-id x-host-header cs-protocol cs-bytes time-taken x-forwarded-for ssl-protocol ssl-cipher x-edge-response-result-type cs-protocol-version fle-status fle-encrypted-fields c-port time-to-first-byte x-edge-detailed-result-type sc-content-type sc-content-len sc-range-start sc-range-end\n" +
     "2019-12-04\t21:02:31\tLAX1\t392\t192.0.2.100\tGET\td111111abcdef8.cloudfront.net\t/index.html\t200\t-\tMozilla/5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/78.0.3904.108%20Safari/537.36\t-\t-\tHit\tSOX4xwn4XV6Q4rgb7XiVGOHms_BGlTAC4KyHmureZmBNrjGdRLiNIQ==\td111111abcdef8.cloudfront.net\thttps\t23\t0.001\t-\tTLSv1.2\tECDHE-RSA-AES128-GCM-SHA256\tHit\tHTTP/2.0\t-\t-\t11040\t0.001\tHit\ttext/html\t78\t-\t-\n" +
@@ -36,6 +47,10 @@ const testLogFileTwo = "#Version: 1.0\n" +
     "2019-12-13\t22:36:27\tSEA19-C1\t900\t192.0.2.200\tGET\td111111abcdef8.cloudfront.net\t/favicon.ico\t502\thttp://www.example.com/\tMozilla/5.0%20(Windows%20NT%2010.0;%20Win64;%20x64)%20AppleWebKit/537.36%20(KHTML,%20like%20Gecko)%20Chrome/78.0.3904.108%20Safari/537.36\t-\t-\tError\t1pkpNfBQ39sYMnjjUQjmH2w1wdJnbHYTbag21o_3OfcQgPzdL2RSSQ==\twww.example.com\thttp\t675\t0.102\t-\t-\t-\tError\tHTTP/1.1\t-\t-\t25260\t0.102\tOriginDnsError\ttext/html\t507\t-\t-\n" +
     "2019-12-13\t22:37:02\tSEA19-C2\t900\t192.0.2.200\tGET\td111111abcdef8.cloudfront.net\t/\t502\t-\tcurl/7.55.1\t-\t-\tError\tkBkDzGnceVtWHqSCqBUqtA_cEs2T3tFUBbnBNkB9El_uVRhHgcZfcw==\twww.example.com\thttp\t387\t0.103\t-\t-\t-\tError\tHTTP/1.1\t-\t-\t12644\t0.103\tOriginDnsError\ttext/html\t507\t-\t-";
 let testLogFileTwoGzipped;
+
+const testJsonLogFile = "{\"date\":\"2026-04-13\",\"time\":\"13:51:52\",\"x-edge-location\":\"LHR5\",\"sc-status\":\"200\"}\n" +
+    "{\"timestamp\":\"2026-04-13T13:51:53Z\",\"sc-status\":\"502\",\"x-edge-location\":\"LHR5\"}\n";
+let testJsonLogFileGzipped;
 
 // Example event
 // {
@@ -54,7 +69,12 @@ let testLogFileTwoGzipped;
 // }
 
 const getObject = jest.fn().mockImplementation((params, callback) => {
-    const Body = params.Key === 'one.log' ? testLogFileOneGzipped : testLogFileTwoGzipped
+    let Body = testLogFileTwoGzipped;
+    if (params.Key === 'one.log') {
+        Body = testLogFileOneGzipped;
+    } else if (params.Key === 'json.log') {
+        Body = testJsonLogFileGzipped;
+    }
     callback(null, {Body});
 });
 AWS.mock('S3', 'getObject', getObject);
@@ -83,6 +103,7 @@ describe('processing a new log object', () => {
     beforeAll(async () => {
         testLogFileOneGzipped = await gzip(testLogFileOne);
         testLogFileTwoGzipped = await gzip(testLogFileTwo);
+        testJsonLogFileGzipped = await gzip(testJsonLogFile);
         await handler(testEvent, {awsRequestId: 'test-id'});
     });
 
@@ -135,5 +156,25 @@ describe('processing a new log object', () => {
                 expect.objectContaining({timestamp: 1576276622000}),
             ],
         }), expect.any(Function));
+    });
+});
+
+describe('processing a v2 json log object', () => {
+    beforeAll(async () => {
+        await handler(testJsonEvent, {awsRequestId: 'test-json-id'});
+    });
+
+    test('calls s3.getObject with json log key and bucket name', () => {
+        expect(getObject).toHaveBeenCalledWith({Bucket: 'test-s3-bucket', Key: 'json.log'}, expect.any(Function));
+    });
+
+    test('calls cloudWatchLogs.putLogEvents with parsed json log events', () => {
+        const latestPutLogEventsCall = putLogEvents.mock.calls[putLogEvents.mock.calls.length - 1][0];
+        expect(latestPutLogEventsCall.logEvents).toHaveLength(2);
+        expect(latestPutLogEventsCall.logEvents).toEqual(expect.arrayContaining([
+            expect.objectContaining({
+                message: expect.stringContaining("\"x-edge-location\":\"LHR5\""),
+            })
+        ]));
     });
 });
