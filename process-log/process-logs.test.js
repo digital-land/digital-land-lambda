@@ -178,3 +178,22 @@ describe('processing a v2 json log object', () => {
         ]));
     });
 });
+
+describe('processing when log stream already exists', () => {
+    beforeAll(async () => {
+        createLogStream.mockImplementationOnce((params, callback) => {
+            callback(Object.assign(new Error('The specified log stream already exists'), {
+                code: 'ResourceAlreadyExistsException',
+            }));
+        });
+
+        await handler(testJsonEvent, {awsRequestId: 'test-existing-stream-id'});
+    });
+
+    test('continues and calls putLogEvents when createLogStream returns ResourceAlreadyExistsException', () => {
+        const latestPutLogEventsCall = putLogEvents.mock.calls[putLogEvents.mock.calls.length - 1][0];
+        expect(latestPutLogEventsCall.logGroupName).toBe('test-log-group');
+        expect(latestPutLogEventsCall.logStreamName).toBe('test-stream');
+        expect(latestPutLogEventsCall.logEvents).toHaveLength(2);
+    });
+});

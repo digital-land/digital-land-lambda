@@ -85,8 +85,19 @@ const getLogEvents = async (s3, Bucket, Key) => {
 };
 
 const getLogStream = async (cloudWatchLogs, logGroupName, logStreamName) => {
-    await cloudWatchLogs.createLogStream({logGroupName, logStreamName}).promise();
+    try {
+        await cloudWatchLogs.createLogStream({logGroupName, logStreamName}).promise();
+    } catch (err) {
+        if (err.code !== 'ResourceAlreadyExistsException') {
+            throw err;
+        }
+    }
+
     const streams = await cloudWatchLogs.describeLogStreams({logGroupName, logStreamNamePrefix: logStreamName}).promise();
+
+    if (!streams.logStreams?.length) {
+        throw new Error(`Unable to find CloudWatch log stream: ${logStreamName}`);
+    }
 
     return {
         logStreamName: streams.logStreams[0].logStreamName,
