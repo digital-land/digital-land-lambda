@@ -98,6 +98,16 @@ jobs:
       
       - name: Deploy aws Lambda functions
         run: |
+          deploy_if_exists() {
+            local function_name="$1"
+            local zip_path="$2"
+            if aws lambda get-function --function-name "$function_name" >/dev/null 2>&1; then
+              aws lambda update-function-code --function-name "$function_name" --zip-file "fileb://$zip_path"
+            else
+              echo "Skipping missing Lambda: $function_name"
+            fi
+          }
+
           aws lambda update-function-code --function-name ${{ matrix.environment }}-main-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-status-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-datasette-slack-notifier --zip-file fileb://./notification-code.zip
@@ -105,7 +115,7 @@ jobs:
           aws lambda update-function-code --function-name ${{ matrix.environment }}-pipeline-int-api-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-data-design-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-dataset-editor-slack-notifier --zip-file fileb://./notification-code.zip
-          aws lambda update-function-code --function-name ${{ matrix.environment }}-config-manager-slack-notifier --zip-file fileb://./notification-code.zip
+          deploy_if_exists "${{ matrix.environment }}-config-manager-slack-notifier" "./notification-code.zip"
           aws lambda update-function-code --function-name ${{ matrix.environment }}-send-alarms-to-slack --zip-file fileb://./cloudwatch-alarms-to-slack.zip
 
       - name: Deploy aws Process log Lambda functions
