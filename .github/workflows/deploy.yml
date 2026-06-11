@@ -115,6 +115,9 @@ jobs:
           aws lambda update-function-code --function-name ${{ matrix.environment }}-pipeline-int-api-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-data-design-slack-notifier --zip-file fileb://./notification-code.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-dataset-editor-slack-notifier --zip-file fileb://./notification-code.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-provider-design-proto-slack-notifier --zip-file fileb://./notification-code.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-local-plans-prototype-slack-notifier --zip-file fileb://./notification-code.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-local-plans-explorer-proto-slack-notifier --zip-file fileb://./notification-code.zip
           deploy_if_exists "${{ matrix.environment }}-config-manager-slack-notifier" "./notification-code.zip"
           aws lambda update-function-code --function-name ${{ matrix.environment }}-send-alarms-to-slack --zip-file fileb://./cloudwatch-alarms-to-slack.zip
 
@@ -131,3 +134,6 @@ jobs:
           aws lambda update-function-code --function-name ${{ matrix.environment }}-data-design-cdn-logs-process --zip-file fileb://./process-log.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-dataset-editor-cdn-logs-process --zip-file fileb://./process-log.zip
           aws lambda update-function-code --function-name ${{ matrix.environment }}-download-lambda-cdn-logs-process --zip-file fileb://./process-log.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-provider-design-proto-cdn-logs-process --zip-file fileb://./process-log.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-local-plans-prototype-cdn-logs-process --zip-file fileb://./process-log.zip
+          aws lambda update-function-code --function-name ${{ matrix.environment }}-local-plans-explorer-proto-cdn-logs-process --zip-file fileb://./process-log.zip
