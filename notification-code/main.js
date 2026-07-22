@@ -9,7 +9,9 @@ const handleCodeDeployEvent = async (event) => {
         const Record = event.Records[index];
         const RecordMessage = JSON.parse(Record.Sns.Message);
         let DeploymentId = RecordMessage.deploymentId;
-        let Type = 'deployment';
+        let Type = RecordMessage.eventType === 'CLOUDFRONT_INVALIDATION'
+            ? 'invalidation'
+            : 'deployment';
         let Application = process.env.APPLICATION_NAME;
 
         const isRollback = RecordMessage.hasOwnProperty('rollbackInformation') &&

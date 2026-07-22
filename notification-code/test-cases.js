@@ -1,4 +1,27 @@
 module.exports = {
+    cloudfrontInvalidation: [{
+        "Records": [
+            {
+                "EventSource": "aws:sns",
+                "EventVersion": "1.0",
+                "Sns": {
+                    "Type": "Notification",
+                    "Message": "{\"eventType\":\"CLOUDFRONT_INVALIDATION\",\"deploymentId\":\"d-MainDeployment\",\"region\":\"eu-west-2\",\"status\":\"CREATED\"}"
+                }
+            }
+        ]
+    }, {
+        "Records": [
+            {
+                "EventSource": "aws:sns",
+                "EventVersion": "1.0",
+                "Sns": {
+                    "Type": "Notification",
+                    "Message": "{\"eventType\":\"CLOUDFRONT_INVALIDATION\",\"deploymentId\":\"d-MainDeployment\",\"region\":\"eu-west-2\",\"status\":\"SUCCEEDED\"}"
+                }
+            }
+        ]
+    }],
     successfulDeployment: [{
         "Records": [
             {

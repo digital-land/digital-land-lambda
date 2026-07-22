@@ -1,7 +1,7 @@
 const AWSMock = require('aws-sdk-mock');
 const {handler} = require("./main");
-const {successfulDeployment, failedDeployment} = require("./test-cases");
-const {getSlackBotToken} = require("./helpers");
+const {successfulDeployment, failedDeployment, cloudfrontInvalidation} = require("./test-cases");
+const {getSlackBotToken, sendMessage} = require("./helpers");
 
 process.env.PARAM_SLACK_BOT_TOKEN = '/test-app/notifications/slack-token';
 process.env.SLACK_CHANNEL = 'dl-developers';
@@ -17,10 +17,16 @@ jest.mock('./helpers', () => ({
         mockDeploymentDetails[DeploymentId] = {DeploymentId, Events}
         console.log(DeploymentId, Events);
     }),
+    sendMessage: jest.fn().mockResolvedValue(undefined),
 }));
 
+beforeEach(() => {
+    mockDeploymentDetails = {};
+    jest.clearAllMocks();
+});
+
 describe('a successful deployment', function () {
-    beforeAll(async () => {
+    beforeEach(async () => {
         for (let index in successfulDeployment) {
             await handler(successfulDeployment[index])
         }
@@ -29,10 +35,20 @@ describe('a successful deployment', function () {
     test('calls getSlackBotToken', () => {
         expect(getSlackBotToken).toHaveBeenCalled();
     });
+
+    test('keeps existing CodeDeploy events classified as deployment events', () => {
+        expect(sendMessage).toHaveBeenLastCalledWith(
+            'TEST_SLACK_BOT_TOKEN',
+            'status',
+            'd-MainDeployment',
+            expect.arrayContaining([expect.objectContaining({Type: 'deployment', State: 'completed'})]),
+            'deployment',
+        );
+    });
 });
 
 describe('an unsuccessful deployment', function () {
-    beforeAll(async () => {
+    beforeEach(async () => {
         for (let index in failedDeployment) {
             await handler(failedDeployment[index])
         }
@@ -40,5 +56,26 @@ describe('an unsuccessful deployment', function () {
 
     test('calls getSlackBotToken', () => {
         expect(getSlackBotToken).toHaveBeenCalled();
+    });
+});
+
+describe('a CloudFront invalidation', function () {
+    beforeEach(async () => {
+        for (let index in cloudfrontInvalidation) {
+            await handler(cloudfrontInvalidation[index]);
+        }
+    });
+
+    test('adds invalidation events to the existing deployment notification', () => {
+        expect(sendMessage).toHaveBeenLastCalledWith(
+            'TEST_SLACK_BOT_TOKEN',
+            'status',
+            'd-MainDeployment',
+            [
+                expect.objectContaining({Type: 'invalidation', State: 'started'}),
+                expect.objectContaining({Type: 'invalidation', State: 'completed'}),
+            ],
+            'invalidation',
+        );
     });
 });

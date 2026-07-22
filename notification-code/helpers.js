@@ -37,7 +37,16 @@ module.exports = {
         const EventMessage = `${TypeMessage} ${DeploymentId} for ${Application} (${ThisEvent.State})`;
         const EventMessageMarkdown = `${Type.charAt(0).toUpperCase() + Type.slice(1)} ${DeploymentId} for ${Application} (${ThisEvent.State})`;
 
-        const headerEmoji = Type === 'deployment' ? (ThisEvent.State === 'completed' ? ':white_check_mark:' : ':hourglass_flowing_sand:') : ':no_entry_sign:';
+        const invalidationHeaderEmoji = ThisEvent.State === 'completed'
+            ? ':white_check_mark:'
+            : ThisEvent.State === 'failed'
+                ? ':no_entry_sign:'
+                : ':hourglass_flowing_sand:';
+        const headerEmoji = Type === 'invalidation'
+            ? invalidationHeaderEmoji
+            : Type === 'deployment'
+                ? (ThisEvent.State === 'completed' ? ':white_check_mark:' : ':hourglass_flowing_sand:')
+                : ':no_entry_sign:';
 
         const MessageBlocks = [
             {
