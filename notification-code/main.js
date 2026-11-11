@@ -1,5 +1,10 @@
-const {WebClient} = require("@slack/web-api");
-const {CodeDeploy} = require("aws-sdk");
+// AWS SDK v3 is provided by the Lambda Node.js runtime, so it is not bundled in the deployment zip.
+const {
+    CodeDeployClient,
+    ListDeploymentTargetsCommand,
+    GetDeploymentTargetCommand,
+    PutLifecycleEventHookExecutionStatusCommand,
+} = require("@aws-sdk/client-codedeploy");
 const {getSlackBotToken, getDeploymentDetails, setDeploymentDetails, sendMessage} = require('./helpers')
 
 const handleCodeDeployEvent = async (event) => {
@@ -56,7 +61,7 @@ const handleCodeDeployEvent = async (event) => {
 };
 
 const handleCodeDeployLifeCycleEvent = async (event) => {
-    const codedeploy = new CodeDeploy({apiVersion: '2014-10-06'});
+    const codedeploy = new CodeDeployClient({});
     const slackBotToken = await getSlackBotToken();
     const DeploymentId = event.DeploymentId;
     const lifecycleEventHookExecutionId = event.LifecycleEventHookExecutionId;
@@ -64,19 +69,19 @@ const handleCodeDeployLifeCycleEvent = async (event) => {
     let failureError = null;
 
     try {
-        const deploymentTargets = await codedeploy.listDeploymentTargets({
+        const deploymentTargets = await codedeploy.send(new ListDeploymentTargetsCommand({
             deploymentId: DeploymentId,
-        }).promise();
+        }));
 
         console.log(JSON.stringify(deploymentTargets));
 
         if (!deploymentTargets.targetIds?.length) {
             console.warn(`No deployment targets found for deployment ${DeploymentId}. Skipping notification update.`);
         } else {
-            const deploymentTarget = await codedeploy.getDeploymentTarget({
+            const deploymentTarget = await codedeploy.send(new GetDeploymentTargetCommand({
                 deploymentId: DeploymentId,
                 targetId: deploymentTargets.targetIds[0],
-            }).promise();
+            }));
 
             console.log(JSON.stringify(deploymentTarget));
 
@@ -138,11 +143,11 @@ const handleCodeDeployLifeCycleEvent = async (event) => {
         }
     } finally {
         try {
-            await codedeploy.putLifecycleEventHookExecutionStatus({
+            await codedeploy.send(new PutLifecycleEventHookExecutionStatusCommand({
                 deploymentId: DeploymentId,
                 lifecycleEventHookExecutionId,
                 status: hookStatus,
-            }).promise();
+            }));
         } catch (statusError) {
             console.error('Failed to report lifecycle hook execution status', statusError);
             throw statusError;
