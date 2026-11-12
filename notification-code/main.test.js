@@ -1,4 +1,3 @@
-const AWSMock = require('aws-sdk-mock');
 const {handler} = require("./main");
 const {successfulDeployment, failedDeployment, cloudfrontInvalidation} = require("./test-cases");
 const {getSlackBotToken, sendMessage} = require("./helpers");

@@ -47,11 +47,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y rsync
 
-      - name: Build Notification functions
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+
+      - name: Test Notification function
+        working-directory: notification-code
         run: |
-          rm -rf node_modules/
-          docker build -t ${{ matrix.environment }}-notification-builder ./notification-code
-          docker run -i -v ${GITHUB_WORKSPACE}/notification-code:/var/task ${{ matrix.environment }}-notification-builder
+          npm ci
+          npm test
+          # Reinstall without dev dependencies so only runtime packages get packaged.
+          npm ci --omit=dev
 
       - name: Set File Permissions
         run: |
@@ -61,7 +68,8 @@ jobs:
 
       - name: Create Notification Archive
         run: |
-          sudo -s sh -c 'cd notification-code && zip -r ../notification-code.zip ./*'
+          # Ship source plus production dependencies only. AWS SDK v3 comes from the Lambda runtime.
+          sudo -s sh -c 'cd notification-code && zip -qr ../notification-code.zip main.js helpers.js node_modules'
           sudo -s sh -c  'pwd'
   
       - name: Upload Notification artifact for deployment job

@@ -1,32 +1,34 @@
-const {SSM, DynamoDB} = require("aws-sdk");
+// AWS SDK v3 is provided by the Lambda Node.js runtime, so it is not bundled in the deployment zip.
+const {SSMClient, GetParameterCommand} = require("@aws-sdk/client-ssm");
+const {DynamoDBClient} = require("@aws-sdk/client-dynamodb");
+const {DynamoDBDocumentClient, GetCommand, PutCommand} = require("@aws-sdk/lib-dynamodb");
 const {WebClient} = require("@slack/web-api");
+
+const ssm = new SSMClient({});
+const dynamo = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 module.exports = {
     getSlackBotToken: async () => {
-        const client = new SSM();
-        const {Parameter: {Value: slackBotToken}} = await client.getParameter({
+        const {Parameter: {Value: slackBotToken}} = await ssm.send(new GetParameterCommand({
             Name: process.env.PARAM_SLACK_BOT_TOKEN,
             WithDecryption: true,
-        }).promise();
+        }));
 
         return slackBotToken;
     },
     getDeploymentDetails: async (DeploymentId) => {
-        const client = new DynamoDB.DocumentClient();
-
-        const {Item} = await client.get({
+        const {Item} = await dynamo.send(new GetCommand({
             TableName: process.env.DEPLOYMENT_TABLE,
             Key: {DeploymentId},
-        }).promise();
+        }));
 
         return Item;
     },
     setDeploymentDetails: async (Item) => {
-        const client = new DynamoDB.DocumentClient();
-        await client.put({
+        await dynamo.send(new PutCommand({
             TableName: process.env.DEPLOYMENT_TABLE,
             Item,
-        }).promise();
+        }));
     },
     sendMessage: async (slackBotToken, Application, DeploymentId, Events, Type) => {
         const slack = new WebClient(slackBotToken);
